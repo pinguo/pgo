@@ -101,7 +101,7 @@ func (app *Application) Init() {
     type dummy struct{}
     pkgPath := reflect.TypeOf(dummy{}).PkgPath()
     SetAlias("@app", app.basePath)
-    SetAlias("@pgo", pkgPath)
+    SetAlias("@pgo", strings.TrimPrefix(pkgPath, VendorPrefix))
 
     // overwrite app name
     if name := app.config.GetString("app.name", ""); len(name) > 0 {

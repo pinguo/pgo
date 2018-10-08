@@ -32,8 +32,8 @@ func (c *Container) Bind(i interface{}) {
     // get reflect type and class name
     rt := iv.Elem().Type()
     name := rt.PkgPath() + "/" + rt.Name()
-    if len(name) > 7 && name[:7] == "vendor/" {
-        name = name[7:]
+    if len(name) > VendorLength && name[:VendorLength] == VendorPrefix {
+        name = name[VendorLength:]
     }
 
     item := bindItem{rt, nil, -1, -1}

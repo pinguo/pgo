@@ -23,6 +23,8 @@ const (
     ControllerCmd      = "Command"
     ConstructMethod    = "Construct"
     InitMethod         = "Init"
+    VendorPrefix       = "vendor/"
+    VendorLength       = 7
     TraceMaxDepth      = 10
 )
 
