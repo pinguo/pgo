@@ -3,10 +3,11 @@ package Redis
 import (
     "fmt"
     "net"
-    "pgo/Util"
     "strings"
     "sync"
     "time"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 type serverInfo struct {

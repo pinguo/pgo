@@ -2,10 +2,11 @@ package Memory
 
 import (
     "fmt"
-    "pgo"
-    "pgo/Util"
     "sync"
     "time"
+
+    "github.com/pinguo/pgo"
+    "github.com/pinguo/pgo/Util"
 )
 
 type item struct {

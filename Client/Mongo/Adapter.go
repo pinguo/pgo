@@ -1,10 +1,9 @@
 package Mongo
 
 import (
-    "pgo"
-
     "github.com/globalsign/mgo"
     "github.com/globalsign/mgo/bson"
+    "github.com/pinguo/pgo"
 )
 
 // Adapter of Mongo Client, add context support.

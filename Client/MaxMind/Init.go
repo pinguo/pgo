@@ -1,6 +1,6 @@
 package MaxMind
 
-import "pgo"
+import "github.com/pinguo/pgo"
 
 const (
     DBCountry = 0

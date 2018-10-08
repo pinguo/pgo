@@ -3,11 +3,12 @@ package pgo
 import (
     "encoding/json"
     "net/http"
-    "pgo/Util"
     "regexp"
     "strings"
     "unicode"
     "unicode/utf8"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 var (

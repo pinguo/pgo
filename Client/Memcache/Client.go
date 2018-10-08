@@ -1,10 +1,11 @@
 package Memcache
 
 import (
-    "pgo"
     "sync"
     "sync/atomic"
     "time"
+
+    "github.com/pinguo/pgo"
 )
 
 // Memcache Client component, configuration:

@@ -3,7 +3,8 @@ package pgo
 import (
     "fmt"
     "net/http"
-    "pgo/Util"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 // status component, configuration:

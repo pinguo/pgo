@@ -3,10 +3,10 @@ package MaxMind
 import (
     "fmt"
     "net"
-    "pgo"
     "strings"
 
     "github.com/oschwald/maxminddb-golang"
+    "github.com/pinguo/pgo"
 )
 
 // Geo 查询结果

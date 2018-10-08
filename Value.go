@@ -4,9 +4,10 @@ import (
     "encoding/json"
     "errors"
     "fmt"
-    "pgo/Util"
     "reflect"
     "strconv"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 func NewValue(data interface{}) *Value {

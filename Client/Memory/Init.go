@@ -1,8 +1,9 @@
 package Memory
 
 import (
-    "pgo"
     "time"
+
+    "github.com/pinguo/pgo"
 )
 
 const (

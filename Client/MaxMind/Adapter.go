@@ -1,7 +1,7 @@
 package MaxMind
 
 import (
-    "pgo"
+    "github.com/pinguo/pgo"
 )
 
 // Adapter of MaxMind Client, add context support.

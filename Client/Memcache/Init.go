@@ -1,8 +1,9 @@
 package Memcache
 
 import (
-    "pgo"
     "time"
+
+    "github.com/pinguo/pgo"
 )
 
 const (

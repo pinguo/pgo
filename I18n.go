@@ -2,8 +2,9 @@ package pgo
 
 import (
     "fmt"
-    "pgo/Util"
     "strings"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 // i18n component, lang format: ll-CC or ll

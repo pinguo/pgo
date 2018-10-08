@@ -7,7 +7,6 @@ import (
     "os"
     "os/signal"
     "path/filepath"
-    "pgo/Util"
     "reflect"
     "runtime"
     "strings"
@@ -15,6 +14,8 @@ import (
     "sync/atomic"
     "syscall"
     "time"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 // server configuration:

@@ -5,9 +5,10 @@ import (
     "io/ioutil"
     "os"
     "path/filepath"
-    "pgo/Util"
     "strings"
     "sync"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 type Config struct {

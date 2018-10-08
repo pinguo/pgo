@@ -1,9 +1,10 @@
 package Memory
 
 import (
-    "pgo"
-    "pgo/Util"
     "time"
+
+    "github.com/pinguo/pgo"
+    "github.com/pinguo/pgo/Util"
 )
 
 // Adapter of Memory Client, add context support.

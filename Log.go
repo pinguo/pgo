@@ -5,11 +5,12 @@ import (
     "fmt"
     "os"
     "path/filepath"
-    "pgo/Util"
     "runtime"
     "strings"
     "sync"
     "time"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 const (

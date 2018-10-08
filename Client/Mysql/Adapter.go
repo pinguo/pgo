@@ -1,6 +1,6 @@
 package Mysql
 
-import "pgo"
+import "github.com/pinguo/pgo"
 
 type Adapter struct {
     pgo.Object

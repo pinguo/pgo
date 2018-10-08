@@ -1,8 +1,9 @@
 package Mongo
 
 import (
-    "pgo"
     "time"
+
+    "github.com/pinguo/pgo"
 )
 
 const (

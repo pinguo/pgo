@@ -1,9 +1,10 @@
 package Redis
 
 import (
-    "pgo"
-    "pgo/Util"
     "time"
+
+    "github.com/pinguo/pgo"
+    "github.com/pinguo/pgo/Util"
 )
 
 // Adapter of Redis Client, add context support.

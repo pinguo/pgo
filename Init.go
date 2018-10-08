@@ -2,11 +2,12 @@ package pgo
 
 import (
     "fmt"
-    "pgo/Util"
     "reflect"
     "regexp"
     "strings"
     "time"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 const (

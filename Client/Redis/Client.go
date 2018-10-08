@@ -2,10 +2,11 @@ package Redis
 
 import (
     "bytes"
-    "pgo"
     "sync"
     "sync/atomic"
     "time"
+
+    "github.com/pinguo/pgo"
 )
 
 // Redis Client component, require redis-server 2.6.12+

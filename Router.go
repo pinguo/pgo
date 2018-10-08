@@ -1,9 +1,10 @@
 package pgo
 
 import (
-    "pgo/Util"
     "regexp"
     "strings"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 // format route string to CamelCase, eg.

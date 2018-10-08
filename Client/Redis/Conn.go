@@ -6,9 +6,10 @@ import (
     "fmt"
     "io"
     "net"
-    "pgo"
     "strconv"
     "time"
+
+    "github.com/pinguo/pgo"
 )
 
 func newConn(addr string, nc net.Conn, pool *Pool) *Conn {

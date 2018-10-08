@@ -5,8 +5,9 @@ import (
     "encoding/json"
     "fmt"
     "net/http"
-    "pgo/Util"
     "reflect"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 // base class of controller and command
