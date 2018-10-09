@@ -32,7 +32,7 @@ func (c *Context) Init() {
     c.Profiler = App.GetLog().GetProfiler()
 
     if App.GetMode() == ModeCmd {
-        c.Logger = GLogger
+        c.Logger = GLogger()
     } else {
         c.Logger = App.GetLog().GetLogger(App.name, c.GetLogId())
     }

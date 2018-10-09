@@ -99,16 +99,16 @@ func (s *Server) Serve() {
     enableDebugServer := App.GetConfig().GetBool("params.debugServer.enable", false)
     defer func() {
         if v := recover(); v != nil {
-            GLogger.Fatal("%s trace[%s]", Util.ToString(v), Util.PanicTrace(TraceMaxDepth, false))
+            GLogger().Fatal("%s trace[%s]", Util.ToString(v), Util.PanicTrace(TraceMaxDepth, false))
         }
         if enableDebugServer == true {
             dAddr := App.GetConfig().GetString("params.debugServer.addr", "0.0.0.0:8100")
-            GLogger.Info("stop running debug http at %s", dAddr)
+            GLogger().Info("stop running debug http at %s", dAddr)
         }
         if App.GetMode() == ModeCmd {
-            GLogger.Info("stop running command %s", flag.Lookup("cmd").Value)
+            GLogger().Info("stop running command %s", flag.Lookup("cmd").Value)
         } else {
-            GLogger.Info("stop running http at %s", s.http.Addr)
+            GLogger().Info("stop running http at %s", s.http.Addr)
         }
 
         App.GetLog().Flush()
@@ -117,7 +117,7 @@ func (s *Server) Serve() {
     if enableDebugServer == true {
         go func() {
             dAddr := App.GetConfig().GetString("params.debugServer.addr", "0.0.0.0:8100")
-            GLogger.Info("start running debug http at %s", dAddr)
+            GLogger().Info("start running debug http at %s", dAddr)
             ds := &http.Server{
                 Addr:         dAddr,
                 ReadTimeout:  40 * time.Second,
@@ -127,10 +127,10 @@ func (s *Server) Serve() {
         }()
     }
     if App.GetMode() == ModeCmd {
-        GLogger.Info("start running command %s", flag.Lookup("cmd").Value)
+        GLogger().Info("start running command %s", flag.Lookup("cmd").Value)
         s.ServeCMD()
     } else {
-        GLogger.Info("start running http at %s", s.http.Addr)
+        GLogger().Info("start running http at %s", s.http.Addr)
         wg := sync.WaitGroup{}
         wg.Add(1)
 
@@ -138,7 +138,7 @@ func (s *Server) Serve() {
         go s.handleSigAndStats(&wg)
 
         if e := s.http.ListenAndServe(); e != http.ErrServerClosed {
-            GLogger.Fatal("ListenAndServe failed, %s", e)
+            GLogger().Fatal("ListenAndServe failed, %s", e)
         } else {
             wg.Wait() // wait completion of shutdown
         }
@@ -190,7 +190,7 @@ func (s *Server) handleSigAndStats(wg *sync.WaitGroup) {
             numReq := atomic.SwapUint64(&s.numReq, 0)
             s.totalReq += numReq
 
-            GLogger.Info("app stats, totalReq:%d, lastReq:%d, numGO:%d, sysMem(mb):%d, totalGC(ms):%d, lastGC(ms):%d",
+            GLogger().Info("app stats, totalReq:%d, lastReq:%d, numGO:%d, sysMem(mb):%d, totalGC(ms):%d, lastGC(ms):%d",
                 s.totalReq, numReq,
                 runtime.NumGoroutine(),
                 memStats.Sys/(1<<20),

@@ -277,6 +277,14 @@ func (l *Logger) log(level int, format string, v ...interface{}) {
     l.dispatcher.AddItem(item)
 }
 
+func (l *Logger) GetName() string {
+    return l.name
+}
+
+func (l *Logger) GetLogId() string {
+    return l.logId
+}
+
 func (l *Logger) Debug(format string, v ...interface{}) {
     l.log(LevelDebug, format, v...)
 }

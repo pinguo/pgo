@@ -31,9 +31,9 @@ const (
 var (
     aliases map[string]string
     aliasRe *regexp.Regexp
+    logger  *Logger
 
     App         *Application
-    GLogger     *Logger
     EmptyObject struct{}
 )
 
@@ -57,14 +57,21 @@ func init() {
     App.container.Bind(&Status{})
     App.container.Bind(&I18n{})
     App.container.Bind(&View{})
-
-    // create global logger
-    GLogger = App.GetLog().GetLogger(App.name, Util.GenUniqueId())
 }
 
 // run application
 func Run() {
     App.GetServer().Serve()
+}
+
+// get global logger
+func GLogger() *Logger {
+    if logger == nil {
+        // defer creation to first call, give opportunity to customize log target
+        logger = App.GetLog().GetLogger(App.name, Util.GenUniqueId())
+    }
+
+    return logger
 }
 
 // set alias for path, @app => /path/to/base
