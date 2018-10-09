@@ -94,7 +94,7 @@ type LogItem struct {
 }
 
 // log component, configuration:
-// {
+// "log": {
 //     "levels": "ALL",
 //     "traceLevels": "DEBUG"
 //     "chanLen": 1000,

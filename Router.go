@@ -24,7 +24,7 @@ type routeRule struct {
 }
 
 // router component, configuration:
-// {
+// "router": {
 //     "rules": [
 //         "^/foo/all$ => /foo/index",
 //         "^/api/user/(\\d+)$ => /api/user"

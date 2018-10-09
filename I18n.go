@@ -12,7 +12,7 @@ import (
 // lang file located in conf directory with
 // name format: i18n_{lang}.json
 // configuration:
-// {
+// "i18n": {
 //     "sourceLang": "en",
 //     "targetLang": [ "en", "zh-CN", "zh-TW"]
 // }

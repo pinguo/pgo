@@ -7,7 +7,7 @@ import (
 )
 
 // Adapter of Mongo Client, add context support.
-// usage: mongo := this.GetObject("@pgo/Client/Mongo/Adapter").(*Adapter)
+// usage: mongo := this.GetObject("@pgo/Client/Mongo/Adapter", db, coll).(*Adapter)
 type Adapter struct {
     pgo.Object
     client *Client

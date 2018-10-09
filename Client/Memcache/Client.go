@@ -9,7 +9,7 @@ import (
 )
 
 // Memcache Client component, configuration:
-// {
+// "memcache": {
 //     "class": "@pgo/Client/Memcache/Client",
 //     "prefix": "pgo_",
 //     "maxIdleConn": 10,

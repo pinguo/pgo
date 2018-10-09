@@ -19,7 +19,7 @@ import (
 )
 
 // server configuration:
-// {
+// "server": {
 //     "addr": "0.0.0.0:8000",
 //     "readTimeout": "30s",
 //     "writeTimeout": "30s",

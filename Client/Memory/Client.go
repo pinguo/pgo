@@ -19,7 +19,7 @@ func (i item) isExpired() bool {
 }
 
 // Memory Client component, configuration:
-// {
+// "memory": {
 //     "class": "@pgo/Client/Memory/Client",
 //     "gcInterval": "60s",
 //     "gcMaxItems": 1000

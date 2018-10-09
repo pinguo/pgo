@@ -10,7 +10,7 @@ import (
 )
 
 // view component, configuration:
-// {
+// "view": {
 //     "suffix": ".html",
 //     "commons": [
 //         "@view/common/header.html",

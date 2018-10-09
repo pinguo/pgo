@@ -9,15 +9,15 @@ import (
     "github.com/pinguo/pgo"
 )
 
-// Geo 查询结果
+// Geo lookup result
 type Geo struct {
-    Code      string `json:"code"`               // 国家/地区码
-    Continent string `json:"-"`                  // 洲名(en)
-    Country   string `json:"country,omitempty"`  // 国家/地区名(en)
-    Province  string `json:"province,omitempty"` // 省名(en)
-    City      string `json:"city,omitempty"`     // 市名(en)
+    Code      string `json:"code"`               // country/area code
+    Continent string `json:"-"`                  // continent name (en)
+    Country   string `json:"country,omitempty"`  // country/area name (en)
+    Province  string `json:"province,omitempty"` // province name (en)
+    City      string `json:"city,omitempty"`     // city name(en)
 
-    // 国际化名称，默认为en
+    // i18n name, default is en
     I18n struct {
         Continent string
         Country   string
@@ -27,7 +27,7 @@ type Geo struct {
 }
 
 // MaxMind Client component, configuration:
-// {
+// "maxMind": {
 //     "class": "@pgo/Client/MaxMind/Client",
 //     "countryFile": "@app/../geoip/GeoLite2-Country.mmdb",
 //     "cityFile": "@app/../geoip/GeoLite2-City.mmdb"

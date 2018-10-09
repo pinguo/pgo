@@ -11,7 +11,7 @@ import (
 
 // Redis Client component, require redis-server 2.6.12+
 // configuration:
-// {
+// "redis": {
 //     "class": "@pgo/Client/Redis/Client",
 //     "prefix": "pgo_",
 //     "password": "",

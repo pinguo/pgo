@@ -8,7 +8,7 @@ import (
 )
 
 // status component, configuration:
-// {
+// "status": {
 //     "useI18n": false,
 //     "mapping": {
 //         "11002": "Verify Sign Error"
