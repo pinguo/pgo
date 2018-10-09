@@ -31,6 +31,7 @@ func (v *View) Construct() {
     v.templates = make(map[string]*template.Template)
 }
 
+// set view file suffix
 func (v *View) SetSuffix(suffix string) {
     if len(suffix) > 0 && suffix[0] != '.' {
         suffix = "." + suffix
@@ -41,6 +42,7 @@ func (v *View) SetSuffix(suffix string) {
     }
 }
 
+// set common view files
 func (v *View) SetCommons(commons []interface{}) {
     for _, p := range commons {
         if view, ok := p.(string); ok {

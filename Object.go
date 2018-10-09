@@ -4,7 +4,7 @@ import (
     "reflect"
 )
 
-// base class of context based object,
+// base class of context based object
 type Object struct {
     context *Context
 }

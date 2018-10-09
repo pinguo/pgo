@@ -24,6 +24,8 @@ func Decode(data interface{}, ptr interface{}) {
     v.Decode(ptr)
 }
 
+// Value adapter for value of any type,
+// provide uniform encoding and decoding.
 type Value struct {
     data interface{}
 }
