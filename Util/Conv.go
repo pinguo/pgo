@@ -36,7 +36,7 @@ func ToBool(v interface{}) bool {
             return rv.Len() != 0
         }
 
-        // none zero value convert to true, otherwise false
+        // valid value convert to true, otherwise false
         return rv.IsValid()
     }
 }

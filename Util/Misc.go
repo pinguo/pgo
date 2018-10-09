@@ -53,7 +53,7 @@ func init() {
     }
 }
 
-// generate a 24 bytes unique id
+// GenUniqueId generate a 24 bytes unique id
 func GenUniqueId() string {
     now := time.Now()
     seq := atomic.AddUint32(&seqId, 1)
@@ -66,7 +66,7 @@ func GenUniqueId() string {
     )
 }
 
-// expand env, format: ${env}, ${env||default}
+// ExpandEnv expand env variables, format: ${env}, ${env||default}
 func ExpandEnv(data []byte) []byte {
     rf := func(s []byte) []byte {
         tmp := bytes.Split(s[2:len(s)-1], []byte{'|', '|'})
@@ -87,7 +87,7 @@ func ExpandEnv(data []byte) []byte {
     return envRe.ReplaceAllFunc(data, rf)
 }
 
-// format lang to ll-CC format
+// FormatLanguage format lang to ll-CC format
 func FormatLanguage(lang string) string {
     matches := langRe.FindStringSubmatch(lang)
     if len(matches) != 3 {
@@ -108,10 +108,10 @@ func FormatLanguage(lang string) string {
         return matches[1]
     }
 
-    return fmt.Sprintf("%s-%s", matches[1], matches[2])
+    return matches[1] + "-" + matches[2]
 }
 
-// get panic trace
+// PanicTrace get panic trace
 func PanicTrace(maxDepth int, multiLine bool) string {
     buf := make([]byte, 1024)
     if n := runtime.Stack(buf, false); n < len(buf) {
@@ -156,7 +156,7 @@ func PanicTrace(maxDepth int, multiLine bool) string {
     return strings.Join(sources, ",")
 }
 
-// format version to have minimum depth
+// FormatVersion format version to have minimum depth,
 // eg. FormatVersion("v10...2....2.1-alpha", 5) == "v10.2.2.1.0-alpha"
 func FormatVersion(ver string, minDepth int) string {
     replaceFunc := func(s string) string {
@@ -180,7 +180,7 @@ func FormatVersion(ver string, minDepth int) string {
     return verFmtRe.ReplaceAllStringFunc(ver, replaceFunc)
 }
 
-// compare version
+// VersionCompare compare versions like version_compare of php,
 // special version strings these are handled in the following order,
 // (any string not found) < dev < alpha = a < beta = b < rc < #(empty) < ##(digit) < pl = p,
 // result: -1(ver1 < ver2), 0(ver1 == ver2), 1(ver1 > ver2)

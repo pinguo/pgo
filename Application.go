@@ -11,7 +11,7 @@ import (
     "sync"
 )
 
-// pgo app initialization steps:
+// app initialization steps:
 // 1. import pgo: pgo.init()
 // 2. customize app: optional
 // 3. pgo.Run(): serve

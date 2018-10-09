@@ -5,14 +5,14 @@ import (
     "strings"
 )
 
-// clear to empty
+// MapClear clear map to empty
 func MapClear(m map[string]interface{}) {
     for k := range m {
         delete(m, k)
     }
 }
 
-// merge map recursively
+// MapMerge merge map recursively
 func MapMerge(a map[string]interface{}, m ...map[string]interface{}) {
     for _, b := range m {
         for k := range b {
@@ -28,7 +28,7 @@ func MapMerge(a map[string]interface{}, m ...map[string]interface{}) {
     }
 }
 
-// get value by dot separated key, empty key for m itself
+// MapGet get value by dot separated key, empty key for m itself
 func MapGet(m map[string]interface{}, key string) interface{} {
     var data interface{} = m
     ks := strings.Split(key, ".")
@@ -52,7 +52,7 @@ func MapGet(m map[string]interface{}, key string) interface{} {
     return data
 }
 
-// set value by dot separated key, empty key for root, nil val for clear
+// MapSet set value by dot separated key, empty key for root, nil val for clear
 func MapSet(m map[string]interface{}, key string, val interface{}) {
     data := m
     last := ""
