@@ -361,20 +361,22 @@ func (p *Profiler) ProfileStart(key string) {
 }
 
 func (p *Profiler) ProfileStop(key string) {
+    if startTime, ok := p.profileStack[key]; ok {
+        delete(p.profileStack, key)
+        p.ProfileAdd(key, time.Now().Sub(startTime))
+    }
+}
+
+func (p *Profiler) ProfileAdd(key string, elapse time.Duration) {
     if nil == p.profile {
         p.profile = make(map[string][2]int)
     }
 
-    if startTime, ok := p.profileStack[key]; ok {
-        delete(p.profileStack, key)
-        elapse := time.Now().Sub(startTime)
+    v, _ := p.profile[key]
+    v[0] += int(elapse.Nanoseconds() / 1e6)
+    v[1] += 1
 
-        v, _ := p.profile[key]
-        v[0] += int(elapse.Nanoseconds() / 1e6)
-        v[1] += 1
-
-        p.profile[key] = v
-    }
+    p.profile[key] = v
 }
 
 func (p *Profiler) GetPushLogString() string {
