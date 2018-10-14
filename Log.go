@@ -466,6 +466,10 @@ type ConsoleTarget struct {
     Target
 }
 
+func (c *ConsoleTarget) Construct() {
+    c.levels = LevelAll
+}
+
 func (c *ConsoleTarget) Process(item *LogItem) {
     if !c.IsHandling(item.Level) {
         return
@@ -492,6 +496,7 @@ type FileTarget struct {
 }
 
 func (f *FileTarget) Construct() {
+    f.levels = LevelAll
     f.filePath = "@runtime/app.log"
     f.maxLogFile = 10
     f.maxBufferByte = 1 << 20
