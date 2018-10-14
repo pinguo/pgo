@@ -257,5 +257,7 @@ func (app *Application) coreComponents() map[string]string {
         "status": "@pgo/Status",
         "i18n":   "@pgo/I18n",
         "view":   "@pgo/View",
+
+        "http": "@pgo/Client/Http/Client",
     }
 }
