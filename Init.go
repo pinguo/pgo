@@ -91,7 +91,7 @@ func SetAlias(alias, path string) {
     aliases[alias] = path
 }
 
-// resolve path alias, @runtime/app.log => /path/to/runtime/App.log
+// resolve path alias, @runtime/app.log => /path/to/runtime/app.log
 func GetAlias(alias string) string {
     rn := aliasRe.FindString(alias)
 
@@ -135,6 +135,15 @@ func CreateObject(class interface{}, params ...interface{}) interface{} {
 
 // configure object using the given configuration
 func Configure(obj interface{}, config map[string]interface{}) {
+    // skip empty configuration
+    if n := len(config); n == 0 {
+        return
+    } else if n == 1 {
+        if _, ok := config["class"]; ok {
+            return
+        }
+    }
+
     // v refer to the object pointer
     var v reflect.Value
     if _, ok := obj.(reflect.Value); ok {
