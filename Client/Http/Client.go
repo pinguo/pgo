@@ -24,7 +24,7 @@ import (
 // }
 type Client struct {
     verifyPeer bool          // verify https peer or not
-    userAgent  string        // default user agent used
+    userAgent  string        // default User-Agent header
     timeout    time.Duration // default request timeout
 }
 
