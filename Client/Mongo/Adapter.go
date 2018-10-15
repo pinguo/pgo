@@ -40,7 +40,7 @@ func (a *Adapter) GetClient() *Client {
 // sort: string or []string, set sort order, eg. "key1" or []string{"key1", "-key2"},
 // skip: int, set skip number, eg. 100,
 // limit: int, set result limit, eg. 1,
-// hint: string or []string, set index hint, eg. []string{"key1", "key1"}
+// hint: string or []string, set index hint, eg. []string{"key1", "key2"}
 //
 // for example:
 //      var v1 interface{} // type of output v1 is bson.M
@@ -367,7 +367,7 @@ func (a *Adapter) MapReduce(query interface{}, job *mgo.MapReduce, result interf
 }
 
 func (a *Adapter) applyQueryOptions(q *mgo.Query, options []bson.M) {
-    if len(options) < 1 {
+    if len(options) == 0 {
         return
     }
 

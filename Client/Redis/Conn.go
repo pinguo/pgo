@@ -94,6 +94,7 @@ func (c *Conn) ReadReply() interface{} {
 
     switch line[0] {
     case '+':
+        // status response, +OK\r\n, +PONG\r\n
         if bytes.Equal(payload, replyOK) {
             return replyOK
         } else if bytes.Equal(payload, replyPong) {
@@ -105,9 +106,11 @@ func (c *Conn) ReadReply() interface{} {
         }
 
     case '-':
+        // error response, -Err\r\n
         c.parseError(errBase+string(payload), false)
 
     case ':':
+        // integer response, :1\r\n
         if n, e := strconv.Atoi(string(payload)); e != nil {
             c.parseError(errCorrupted+e.Error(), true)
         } else {
@@ -115,6 +118,7 @@ func (c *Conn) ReadReply() interface{} {
         }
 
     case '$':
+        // bulk string response, $7\r\nfoo bar\r\n, -1 for nil data
         if size, e := strconv.Atoi(string(payload)); e != nil {
             c.parseError(errCorrupted+e.Error(), true)
         } else if size >= 0 {
@@ -126,6 +130,7 @@ func (c *Conn) ReadReply() interface{} {
         }
 
     case '*':
+        // multi response, *2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n
         if argc, e := strconv.Atoi(string(payload)); e != nil {
             c.parseError(errCorrupted+e.Error(), true)
         } else if argc >= 0 {
