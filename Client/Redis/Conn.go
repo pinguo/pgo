@@ -94,7 +94,7 @@ func (c *Conn) ReadReply() interface{} {
 
     switch line[0] {
     case '+':
-        // status response, +OK\r\n, +PONG\r\n
+        // status response: +<data bytes>\r\n, eg. +OK\r\n, +PONG\r\n
         if bytes.Equal(payload, replyOK) {
             return replyOK
         } else if bytes.Equal(payload, replyPong) {
@@ -106,11 +106,11 @@ func (c *Conn) ReadReply() interface{} {
         }
 
     case '-':
-        // error response, -Err\r\n
+        // error response:-<data bytes>\r\n, eg. -Err unknown command\r\n
         c.parseError(errBase+string(payload), false)
 
     case ':':
-        // integer response, :1\r\n
+        // integer response: :<integer>\r\n, eg. :99\r\n
         if n, e := strconv.Atoi(string(payload)); e != nil {
             c.parseError(errCorrupted+e.Error(), true)
         } else {
@@ -118,7 +118,8 @@ func (c *Conn) ReadReply() interface{} {
         }
 
     case '$':
-        // bulk string response, $7\r\nfoo bar\r\n, -1 for nil data
+        // bulk string response: $<bytes of data>\r\n<binary data>\r\n,
+        // -1 for nil response. eg. $7\r\nfoo bar\r\n
         if size, e := strconv.Atoi(string(payload)); e != nil {
             c.parseError(errCorrupted+e.Error(), true)
         } else if size >= 0 {
@@ -130,7 +131,8 @@ func (c *Conn) ReadReply() interface{} {
         }
 
     case '*':
-        // multi response, *2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n
+        // multi response: *<argc>\r\n$<bytes of arg1>\r\n<data of arg1>\r\n[argN...],
+        // -1 for nil response. eg. *2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n
         if argc, e := strconv.Atoi(string(payload)); e != nil {
             c.parseError(errCorrupted+e.Error(), true)
         } else if argc >= 0 {
