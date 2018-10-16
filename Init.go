@@ -25,6 +25,8 @@ const (
     InitMethod         = "Init"
     VendorPrefix       = "vendor/"
     VendorLength       = 7
+    ActionPrefix       = "Action"
+    ActionLength       = 6
     TraceMaxDepth      = 10
 )
 

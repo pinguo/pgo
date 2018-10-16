@@ -29,8 +29,8 @@ func (c *Controller) GetBindInfo(v interface{}) interface{} {
 
     for i := 0; i < num; i++ {
         name := rt.Method(i).Name
-        if len(name) > 6 && name[:6] == "Action" {
-            actions[name[6:]] = i
+        if len(name) > ActionLength && name[:ActionLength] == ActionPrefix {
+            actions[name[ActionLength:]] = i
         }
     }
 
