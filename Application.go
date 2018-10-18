@@ -84,7 +84,7 @@ func (app *Application) Init() {
 
     // overwrite base path
     if len(*base) > 0 {
-        app.basePath = *base
+        app.basePath, _ = filepath.Abs(*base)
     }
 
     // initialize config object
@@ -115,17 +115,17 @@ func (app *Application) Init() {
 
     // set runtime path
     runtimePath := app.config.GetString("app.runtimePath", "@app/runtime")
-    app.runtimePath = GetAlias(runtimePath)
+    app.runtimePath, _ = filepath.Abs(GetAlias(runtimePath))
     SetAlias("@runtime", app.runtimePath)
 
     // set public path
     publicPath := app.config.GetString("app.publicPath", "@app/public")
-    app.publicPath = GetAlias(publicPath)
+    app.publicPath, _ = filepath.Abs(GetAlias(publicPath))
     SetAlias("@public", app.publicPath)
 
     // set view path
     viewPath := app.config.GetString("app.viewPath", "@app/view")
-    app.viewPath = GetAlias(viewPath)
+    app.viewPath, _ = filepath.Abs(GetAlias(viewPath))
     SetAlias("@view", app.viewPath)
 
     // set core components
