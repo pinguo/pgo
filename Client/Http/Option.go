@@ -5,7 +5,7 @@ import (
     "time"
 )
 
-// Option configuration option for http request
+// Option config option for http request
 type Option struct {
     Header  http.Header
     Cookies []*http.Cookie

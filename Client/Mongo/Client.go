@@ -12,7 +12,7 @@ import (
 // Mongo Client component, configuration:
 // "mongo": {
 //     "class": "@pgo/Client/Mongo/Client",
-//     "dsn": "mongodb://host1:port1/[db[?options]]",
+//     "dsn": "mongodb://host1:port1/[db][?options]",
 //     "connectTimeout": "1s",
 //     "readTimeout": "10s",
 //     "writeTimeout": "10s"
