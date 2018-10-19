@@ -24,7 +24,7 @@ const (
     LevelAll    = 0xFF
 )
 
-func levelToString(level int) string {
+func LevelToString(level int) string {
     switch level {
     case LevelNone:
         return "NONE"
@@ -47,7 +47,7 @@ func levelToString(level int) string {
     }
 }
 
-func stringToLevel(level string) int {
+func StringToLevel(level string) int {
     switch strings.ToUpper(level) {
     case "NONE":
         return LevelNone
@@ -78,7 +78,7 @@ func parseLevels(str string) int {
 
     for _, v := range parts {
         v = strings.TrimSpace(v)
-        levels |= stringToLevel(v)
+        levels |= StringToLevel(v)
     }
 
     return levels
@@ -455,7 +455,7 @@ func (t *Target) Format(item *LogItem) string {
         item.When.Format("2006/01/02 15:04:05.000"),
         item.LogId,
         item.Name,
-        levelToString(item.Level),
+        LevelToString(item.Level),
         item.Trace,
         item.Message,
     )
