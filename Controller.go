@@ -49,9 +49,8 @@ func (c *Controller) AfterAction(action string) {
 func (c *Controller) FinishAction(action string) {
     ctx := c.GetContext()
 
-    ctx.Notice("[%d(ms)] [%d] [%s] pushlog[%s] profile[%s] counting[%s]",
+    ctx.Notice("[%d(ms)] [1(MB)] [%s] [%s] profile[%s] counting[%s]",
         ctx.GetElapseMs(),
-        c.Status,
         ctx.GetPath(),
         ctx.GetPushLogString(),
         ctx.GetProfileString(),
