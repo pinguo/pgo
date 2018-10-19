@@ -66,7 +66,7 @@ func IsAllUpper(s string) bool {
     return true
 }
 
-// Md5Bytes get 16 bytes of md5 for value v
+// Md5Bytes get 16 bytes of md5
 func Md5Bytes(v interface{}) []byte {
     ctx := md5.New()
     switch vv := v.(type) {
@@ -87,7 +87,7 @@ func Md5Bytes(v interface{}) []byte {
     return ctx.Sum(nil)
 }
 
-// Md5String get 32 bytes of md5 hex string for value v
+// Md5String get 32 bytes of md5 hex string
 func Md5String(v interface{}) string {
     return hex.EncodeToString(Md5Bytes(v))
 }

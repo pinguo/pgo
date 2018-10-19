@@ -23,6 +23,8 @@ func ToBool(v interface{}) bool {
         return str2bool(val)
     case []byte:
         return str2bool(string(val))
+    case nil:
+        return false
     default:
         rv := reflect.ValueOf(v)
         if rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface {
@@ -153,22 +155,5 @@ func str2float(s string) float64 {
         return float64(i64)
     } else {
         return 0
-    }
-}
-
-func ToBytes(arg interface{}) (string, error) {
-    switch arg := arg.(type) {
-    case int:
-        return strconv.Itoa(arg), nil
-    case int64:
-        return strconv.Itoa(int(arg)), nil
-    case float64:
-        return strconv.FormatFloat(arg, 'g', -1, 64), nil
-    case string:
-        return arg, nil
-    case []byte:
-        return string(arg), nil
-    default:
-        return "", fmt.Errorf("unknown type %T", arg)
     }
 }
