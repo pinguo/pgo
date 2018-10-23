@@ -22,6 +22,10 @@ const (
     LevelError  = 0x10
     LevelFatal  = 0x20
     LevelAll    = 0xFF
+
+    rotateNone   = 0
+    rotateHourly = 1
+    rotateDaily  = 2
 )
 
 func LevelToString(level int) string {
@@ -169,8 +173,12 @@ func (d *Dispatcher) SetTraceLevels(v interface{}) {
     }
 }
 
-func (d *Dispatcher) SetFlushInterval(interval string) {
-    d.flushInterval, _ = time.ParseDuration(interval)
+func (d *Dispatcher) SetFlushInterval(v string) {
+    if flushInterval, err := time.ParseDuration(v); err != nil {
+        panic(fmt.Sprintf("Dispatcher: parse flushInterval error, val:%s, err:%s", v, err.Error()))
+    } else {
+        d.flushInterval = flushInterval
+    }
 }
 
 func (d *Dispatcher) SetTargets(targets map[string]interface{}) {
@@ -419,6 +427,7 @@ type Target struct {
     formatter IFormatter
 }
 
+// set log levels, eg. DEBUG,INFO,NOTICE
 func (t *Target) SetLevels(v interface{}) {
     if _, ok := v.(string); ok {
         t.levels = parseLevels(v.(string))
@@ -429,6 +438,7 @@ func (t *Target) SetLevels(v interface{}) {
     }
 }
 
+// set user-defined log formatter, eg. "Lib/Log/Formatter"
 func (t *Target) SetFormatter(v interface{}) {
     if ptr, ok := v.(IFormatter); ok {
         t.formatter = ptr
@@ -482,37 +492,49 @@ func (c *ConsoleTarget) Flush(final bool) {
     os.Stdout.Sync()
 }
 
-// file output target
+// file output target, configuration:
+// "info": {
+//     "class": "@pgo/FileTarget",
+//     "levels": "DEBUG,INFO,NOTICE",
+//     "filePath": "@runtime/info.log",
+//     "maxLogFile": 10,
+//     "maxBufferByte": 1048576,
+//     "maxBufferLine": 1000,
+//     "rotate": "daily"
+// }
 type FileTarget struct {
     Target
     filePath      string
     maxLogFile    int
     maxBufferByte int
     maxBufferLine int
-    curBufferLine int
+    rotate        int
+
     buffer        bytes.Buffer
     file          *os.File
     lastRotate    time.Time
+    curBufferLine int
 }
 
 func (f *FileTarget) Construct() {
-    f.levels = LevelAll
     f.filePath = "@runtime/app.log"
     f.maxLogFile = 10
     f.maxBufferByte = 1 << 20
     f.maxBufferLine = 1000
+    f.rotate = rotateDaily
+    f.levels = LevelAll
 }
 
 func (f *FileTarget) Init() {
-    path := GetAlias(f.filePath)
-    h, e := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+    f.filePath = GetAlias(f.filePath)
+    h, e := os.OpenFile(f.filePath, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
     if e != nil {
-        panic(fmt.Sprintf("FileTarget: failed to open file: %s, e: %s", path, e))
+        panic(fmt.Sprintf("FileTarget: failed to open file: %s, e: %s", f.filePath, e))
     }
 
     stat, e := h.Stat()
     if e != nil {
-        panic(fmt.Sprintf("FileTarget: failed to stat file: %s, e: %s", path, e))
+        panic(fmt.Sprintf("FileTarget: failed to stat file: %s, e: %s", f.filePath, e))
     }
 
     f.file = h
@@ -521,20 +543,38 @@ func (f *FileTarget) Init() {
     f.buffer.Grow(f.maxBufferByte)
 }
 
+// set file path or path alias, default @runtime/app.log
 func (f *FileTarget) SetFilePath(filePath string) {
     f.filePath = filePath
 }
 
+// set max log files backup in fs, default 10
 func (f *FileTarget) SetMaxLogFile(maxLogFile int) {
     f.maxLogFile = maxLogFile
 }
 
+// set max log bytes hold in buffer, default 1MB
 func (f *FileTarget) SetMaxBufferByte(maxBufferByte int) {
     f.maxBufferByte = maxBufferByte
 }
 
+// set max log lines hold in buffer, default 1000
 func (f *FileTarget) SetMaxBufferLine(maxBufferLine int) {
     f.maxBufferLine = maxBufferLine
+}
+
+// set rotate policy(none, hourly, daily), default daily
+func (f *FileTarget) SetRotate(rotate string) {
+    switch strings.ToUpper(rotate) {
+    case "NONE":
+        f.rotate = rotateNone
+    case "HOURLY":
+        f.rotate = rotateHourly
+    case "DAILY":
+        f.rotate = rotateDaily
+    default:
+        panic("FileTarget: invalid rotate:" + rotate)
+    }
 }
 
 func (f *FileTarget) Process(item *LogItem) {
@@ -542,9 +582,9 @@ func (f *FileTarget) Process(item *LogItem) {
         return
     }
 
-    // rotate file by day
-    if item.When.Day() != f.lastRotate.Day() {
-        f.rotate(item.When)
+    // rotate log file
+    if f.shouldRotate(item.When) {
+        f.rotateLog(item.When)
     }
 
     // write log to buffer
@@ -560,49 +600,69 @@ func (f *FileTarget) Process(item *LogItem) {
 func (f *FileTarget) Flush(final bool) {
     f.curBufferLine = 0
 
-    if f.file != nil {
-        f.buffer.WriteTo(f.file)
+    if f.file == nil {
+        // reopen log file if previously closed
+        if h, e := os.OpenFile(f.filePath, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644); e != nil {
+            panic(fmt.Sprintf("FileTarget: failed to open file: %s, e: %s", f.filePath, e))
+        } else {
+            f.file = h
+        }
     }
 
+    // write log buffer to file
+    f.buffer.WriteTo(f.file)
     f.buffer.Reset()
 
-    if final {
+    // lash flush or no rotate for this file,
+    // close and reset file handler
+    if final || f.rotate == rotateNone {
         f.file.Close()
         f.file = nil
     }
 }
 
-func (f *FileTarget) rotate(now time.Time) {
-    defer func() {
-        f.lastRotate = now
-    }()
+func (f *FileTarget) shouldRotate(now time.Time) bool {
+    if f.rotate == rotateHourly {
+        return now.Hour() != f.lastRotate.Hour() || now.Day() != f.lastRotate.Day()
+    } else if f.rotate == rotateDaily {
+        return now.Day() != f.lastRotate.Day()
+    }
+
+    return false
+}
+
+func (f *FileTarget) rotateLog(now time.Time) {
+    layout, hours := "", 0
+    if f.rotate == rotateHourly {
+        layout = "2006010215"
+        hours = f.maxLogFile + 1
+    } else if f.rotate == rotateDaily {
+        layout = "20060102"
+        hours = (f.maxLogFile + 1) * 24
+    } else {
+        return
+    }
 
     // flush and close file
     f.Flush(true)
 
     // move current file to backup file
-    path := GetAlias(f.filePath)
-    date := f.lastRotate.Format("20060102")
-    newPath := fmt.Sprintf("%s.%s", path, date)
-    os.Rename(path, newPath)
+    suffix := f.lastRotate.Format(layout)
+    newPath := fmt.Sprintf("%s.%s", f.filePath, suffix)
+    os.Rename(f.filePath, newPath)
+
+    // update last rotate time
+    f.lastRotate = now
 
     // clean backup file
-    backups, _ := filepath.Glob(path + ".*")
+    backups, _ := filepath.Glob(f.filePath + ".*")
     if len(backups) > 0 {
         for _, backup := range backups {
             ext := filepath.Ext(backup)
-            d, e := time.ParseInLocation("20060102", ext[1:], now.Location())
-            if e == nil && int(now.Sub(d).Hours()/24) > f.maxLogFile {
+            d, e := time.ParseInLocation(layout, ext[1:], now.Location())
+            if e == nil && int(now.Sub(d).Hours()) >= hours {
                 os.Remove(backup)
             }
         }
     }
-
-    // recreate log file
-    h, e := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
-    if e != nil {
-        panic(fmt.Sprintf("FileTarget: failed to open file: %s, e: %s", path, e))
-    }
-
-    f.file = h
 }
