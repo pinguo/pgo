@@ -149,6 +149,7 @@ func (d *Dispatcher) Init() {
     go d.loop()
 }
 
+// set log levels to handle, default all
 func (d *Dispatcher) SetLevels(v interface{}) {
     if _, ok := v.(string); ok {
         d.levels = parseLevels(v.(string))
@@ -159,10 +160,12 @@ func (d *Dispatcher) SetLevels(v interface{}) {
     }
 }
 
+// set length of log channel, default 1000
 func (d *Dispatcher) SetChanLen(len int) {
     d.chanLen = len
 }
 
+// set log levels to trace, default debug
 func (d *Dispatcher) SetTraceLevels(v interface{}) {
     if _, ok := v.(string); ok {
         d.traceLevels = parseLevels(v.(string))
@@ -173,6 +176,7 @@ func (d *Dispatcher) SetTraceLevels(v interface{}) {
     }
 }
 
+// set interval to flush log, default 60s
 func (d *Dispatcher) SetFlushInterval(v string) {
     if flushInterval, err := time.ParseDuration(v); err != nil {
         panic(fmt.Sprintf("Dispatcher: parse flushInterval error, val:%s, err:%s", v, err.Error()))
@@ -181,6 +185,7 @@ func (d *Dispatcher) SetFlushInterval(v string) {
     }
 }
 
+// set output target, default ConsoleTarget
 func (d *Dispatcher) SetTargets(targets map[string]interface{}) {
     d.targets = make(map[string]ITarget)
 
@@ -195,38 +200,38 @@ func (d *Dispatcher) SetTargets(targets map[string]interface{}) {
     }
 }
 
+// get a new logger with name and logId specified
 func (d *Dispatcher) GetLogger(name, logId string) *Logger {
     return &Logger{name, logId, d}
 }
 
+// get a new profiler
 func (d *Dispatcher) GetProfiler() *Profiler {
     return &Profiler{}
-}
-
-func (d *Dispatcher) IsHandling(level int) bool {
-    return level&d.levels != 0
-}
-
-func (d *Dispatcher) AddItem(item *LogItem) {
-    if d.levels&item.Level != 0 {
-        if d.traceLevels&item.Level != 0 {
-            if _, file, line, ok := runtime.Caller(3); ok {
-                if pos := strings.LastIndex(file, "src/"); pos > 0 {
-                    file = file[pos+4:]
-                }
-
-                item.Trace = fmt.Sprintf("[%s:%d]", file, line)
-            }
-        }
-
-        d.msgChan <- item
-    }
 }
 
 // close msg chan and wait loop end
 func (d *Dispatcher) Flush() {
     close(d.msgChan)
     d.wg.Wait()
+}
+
+func (d *Dispatcher) isHandling(level int) bool {
+    return level&d.levels != 0
+}
+
+func (d *Dispatcher) addItem(item *LogItem) {
+    if d.traceLevels&item.Level != 0 {
+        if _, file, line, ok := runtime.Caller(3); ok {
+            if pos := strings.LastIndex(file, "src/"); pos > 0 {
+                file = file[pos+4:]
+            }
+
+            item.Trace = fmt.Sprintf("[%s:%d]", file, line)
+        }
+    }
+
+    d.msgChan <- item
 }
 
 func (d *Dispatcher) loop() {
@@ -265,7 +270,7 @@ type Logger struct {
 }
 
 func (l *Logger) log(level int, format string, v ...interface{}) {
-    if !l.dispatcher.IsHandling(level) {
+    if !l.dispatcher.isHandling(level) {
         return
     }
 
@@ -282,7 +287,7 @@ func (l *Logger) log(level int, format string, v ...interface{}) {
         item.Message = fmt.Sprintf(format, v...)
     }
 
-    l.dispatcher.AddItem(item)
+    l.dispatcher.addItem(item)
 }
 
 func (l *Logger) GetName() string {
@@ -333,16 +338,16 @@ func (p *Profiler) Reset() {
 }
 
 func (p *Profiler) PushLog(key string, v interface{}) {
-    if nil == p.pushLog {
+    if p.pushLog == nil {
         p.pushLog = make([]string, 0)
     }
 
-    pl := fmt.Sprintf("%s=%s", key, Util.ToString(v))
+    pl := key + "=" + Util.ToString(v)
     p.pushLog = append(p.pushLog, pl)
 }
 
 func (p *Profiler) Counting(key string, hit, total int) {
-    if nil == p.counting {
+    if p.counting == nil {
         p.counting = make(map[string][2]int)
     }
 
@@ -361,7 +366,7 @@ func (p *Profiler) Counting(key string, hit, total int) {
 }
 
 func (p *Profiler) ProfileStart(key string) {
-    if nil == p.profileStack {
+    if p.profileStack == nil {
         p.profileStack = make(map[string]time.Time)
     }
 
@@ -376,7 +381,7 @@ func (p *Profiler) ProfileStop(key string) {
 }
 
 func (p *Profiler) ProfileAdd(key string, elapse time.Duration) {
-    if nil == p.profile {
+    if p.profile == nil {
         p.profile = make(map[string][2]int)
     }
 
@@ -415,7 +420,7 @@ func (p *Profiler) GetProfileString() string {
 
     ps := make([]string, 0)
     for k, v := range p.profile {
-        ps = append(ps, fmt.Sprintf("%s=%d(ms)/%d", k, v[0], v[1]))
+        ps = append(ps, fmt.Sprintf("%s=%dms/%d", k, v[0], v[1]))
     }
 
     return strings.Join(ps, " ")
@@ -427,7 +432,7 @@ type Target struct {
     formatter IFormatter
 }
 
-// set log levels, eg. DEBUG,INFO,NOTICE
+// set log levels for target, eg. DEBUG,INFO,NOTICE
 func (t *Target) SetLevels(v interface{}) {
     if _, ok := v.(string); ok {
         t.levels = parseLevels(v.(string))
@@ -498,8 +503,8 @@ func (c *ConsoleTarget) Flush(final bool) {
 //     "levels": "DEBUG,INFO,NOTICE",
 //     "filePath": "@runtime/info.log",
 //     "maxLogFile": 10,
-//     "maxBufferByte": 1048576,
-//     "maxBufferLine": 1000,
+//     "maxBufferByte": 10485760,
+//     "maxBufferLine": 10000,
 //     "rotate": "daily"
 // }
 type FileTarget struct {
@@ -511,7 +516,6 @@ type FileTarget struct {
     rotate        int
 
     buffer        bytes.Buffer
-    file          *os.File
     lastRotate    time.Time
     curBufferLine int
 }
@@ -519,8 +523,8 @@ type FileTarget struct {
 func (f *FileTarget) Construct() {
     f.filePath = "@runtime/app.log"
     f.maxLogFile = 10
-    f.maxBufferByte = 1 << 20
-    f.maxBufferLine = 1000
+    f.maxBufferByte = 10 * 1024 * 1024
+    f.maxBufferLine = 10000
     f.rotate = rotateDaily
     f.levels = LevelAll
 }
@@ -532,12 +536,13 @@ func (f *FileTarget) Init() {
         panic(fmt.Sprintf("FileTarget: failed to open file: %s, e: %s", f.filePath, e))
     }
 
+    defer h.Close()
+
     stat, e := h.Stat()
     if e != nil {
         panic(fmt.Sprintf("FileTarget: failed to stat file: %s, e: %s", f.filePath, e))
     }
 
-    f.file = h
     f.curBufferLine = 0
     f.lastRotate = stat.ModTime()
     f.buffer.Grow(f.maxBufferByte)
@@ -553,12 +558,12 @@ func (f *FileTarget) SetMaxLogFile(maxLogFile int) {
     f.maxLogFile = maxLogFile
 }
 
-// set max log bytes hold in buffer, default 1MB
+// set max log bytes hold in buffer, default 10MB
 func (f *FileTarget) SetMaxBufferByte(maxBufferByte int) {
     f.maxBufferByte = maxBufferByte
 }
 
-// set max log lines hold in buffer, default 1000
+// set max log lines hold in buffer, default 10000
 func (f *FileTarget) SetMaxBufferLine(maxBufferLine int) {
     f.maxBufferLine = maxBufferLine
 }
@@ -598,28 +603,23 @@ func (f *FileTarget) Process(item *LogItem) {
 }
 
 func (f *FileTarget) Flush(final bool) {
-    if f.file == nil {
-        // reopen log file if previously closed
-        if h, e := os.OpenFile(f.filePath, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644); e != nil {
-            panic(fmt.Sprintf("FileTarget: failed to open file: %s, e: %s", f.filePath, e))
-        } else {
-            f.file = h
-        }
+    // nothing to flush
+    if f.curBufferLine == 0 {
+        return
     }
+
+    // open log file to write
+    h, e := os.OpenFile(f.filePath, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+    if e != nil {
+        panic(fmt.Sprintf("FileTarget: failed to open file: %s, e: %s", f.filePath, e))
+    }
+
+    defer h.Close()
 
     // write log buffer to file
-    if f.curBufferLine > 0 {
-        f.curBufferLine = 0
-        f.buffer.WriteTo(f.file)
-        f.buffer.Reset()
-    }
-
-    // lash flush or no rotate for this file,
-    // close and reset file handler
-    if final || f.rotate == rotateNone {
-        f.file.Close()
-        f.file = nil
-    }
+    f.buffer.WriteTo(h)
+    f.buffer.Reset()
+    f.curBufferLine = 0
 }
 
 func (f *FileTarget) shouldRotate(now time.Time) bool {
@@ -633,13 +633,13 @@ func (f *FileTarget) shouldRotate(now time.Time) bool {
 }
 
 func (f *FileTarget) rotateLog(now time.Time) {
-    layout, hours := "", 0
+    layout, interval := "", time.Duration(0)
     if f.rotate == rotateHourly {
         layout = "2006010215"
-        hours = f.maxLogFile + 1
+        interval = time.Hour
     } else if f.rotate == rotateDaily {
         layout = "20060102"
-        hours = (f.maxLogFile + 1) * 24
+        interval = time.Hour * 24
     } else {
         return
     }
@@ -661,7 +661,7 @@ func (f *FileTarget) rotateLog(now time.Time) {
         for _, backup := range backups {
             ext := filepath.Ext(backup)
             d, e := time.ParseInLocation(layout, ext[1:], now.Location())
-            if e == nil && int(now.Sub(d).Hours()) >= hours {
+            if e == nil && int(now.Sub(d)/interval) > f.maxLogFile {
                 os.Remove(backup)
             }
         }
