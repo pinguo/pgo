@@ -598,8 +598,6 @@ func (f *FileTarget) Process(item *LogItem) {
 }
 
 func (f *FileTarget) Flush(final bool) {
-    f.curBufferLine = 0
-
     if f.file == nil {
         // reopen log file if previously closed
         if h, e := os.OpenFile(f.filePath, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644); e != nil {
@@ -610,8 +608,11 @@ func (f *FileTarget) Flush(final bool) {
     }
 
     // write log buffer to file
-    f.buffer.WriteTo(f.file)
-    f.buffer.Reset()
+    if f.curBufferLine > 0 {
+        f.curBufferLine = 0
+        f.buffer.WriteTo(f.file)
+        f.buffer.Reset()
+    }
 
     // lash flush or no rotate for this file,
     // close and reset file handler
