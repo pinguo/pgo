@@ -26,6 +26,8 @@ PGO应用框架即"Pinguo GO application framework"，是Camera360广告服务�
 │   └── params.json     # 自定义配置文件
 ├── makefile            # 编译打包
 ├── runtime/            # 运行时目录
+├── public/             # 静态资源目录
+├── view/               # 视图模板目录
 └── src/                # 项目源码目录
     ├── Command/        # 命令行控制器目录
     ├── Controller/     # HTTP控制器目录
@@ -154,4 +156,7 @@ TODO
     curl http://127.0.0.1:8000/welcome
     ```
 
-## 核心参考
+## 参考文档
+    [pgo-docs](https://github.com/pinguo/pgo-docs)
+## 应用示例
+    [pgo-demo](https://github.com/pinguo/pgo-demo)
