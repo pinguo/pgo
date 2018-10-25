@@ -99,7 +99,7 @@ TODO
     ```
 3. 安装PGO
     ```sh
-    cd src
+    cd src && glide init
     GOPATH=$(cd .. && pwd) glide get github.com/pinguo/pgo
     ```
 4. 创建控制器(src/Controller/WelcomeController.go)
