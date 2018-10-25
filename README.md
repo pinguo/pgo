@@ -59,6 +59,99 @@ glide update            # 更新依赖包
 TODO
 
 ## 快速开始
+1. 创建项目目录(参见`项目目录`)，或从[pgo-demo](https://github.com/pinguo/pgo-demo)克隆目录结构
+2. 修改配置文件app.json
+    ```json
+    {
+        "name": "pgo-demo",
+        "GOMAXPROCS": 2,
+        "runtimePath": "@app/runtime",
+        "publicPath": "@app/public",
+        "viewPath": "@app/view",
+        "server": {
+            "addr": "0.0.0.0:8000",
+            "readTimeout": "30s",
+            "writeTimeout": "30s",
+            "plugins": []
+        },
+        "components": {
+            "log": {
+                "levels": "ALL",
+                "targets": {
+                    "info": {
+                        "class": "@pgo/FileTarget",
+                        "levels": "DEBUG,INFO,NOTICE",
+                        "filePath": "@runtime/info.log",
+                    },
+                    "error": {
+                        "class": "@pgo/FileTarget",
+                        "levels": "WARN,ERROR,FATAL",
+                        "filePath": "@runtime/error.log",
+                    },
+                    "console": {
+                        "class": "@pgo/ConsoleTarget",
+                        "levels": "ALL"
+                    }
+                }
+            }
+        }
+    }
+    ```
+3. 安装PGO
+    ```sh
+    cd src
+    GOPATH=$(cd .. && pwd) glide get github.com/pinguo/pgo
+    ```
+4. 创建控制器
+    ```go
+    Welcome控制器：src/Controller/WelcomeController.go
+    package Controller
 
+    import (
+        "github.com/pinguo/pgo"
+        "net/http"
+        "time"
+    )
+
+    type WelcomeController struct {
+        pgo.Controller
+    }
+
+    func (w *WelcomeController) ActionIndex() {
+        data := pgo.Map{"text": "welcome to pgo-demo", "now": time.Now()}
+        w.OutputJson(data, http.StatusOK)
+    }
+
+    注册控制器：src/Controller/Init.go
+    package Controller
+
+    import "github.com/pinguo/pgo"
+
+    func init() {
+        container := pgo.App.GetContainer()
+
+        container.Bind(&WelcomeController{})
+    }
+    ```
+5. 创建程序入口
+    ```go
+    程序入口：src/Main/main.go
+    package main
+
+    import (
+        _ "Controller" // 导入控制器
+
+        "github.com/pinguo/pgo"
+    )
+
+    func main() {
+        pgo.Run()   // 运行程序
+    }
+    ```
+6. 编译运行
+    ```sh
+    make start
+    curl http://127.0.0.1:8000/welcome
+    ```
 
 ## 使用示例
