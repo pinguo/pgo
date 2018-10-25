@@ -60,7 +60,7 @@ TODO
 
 ## 快速开始
 1. 创建项目目录(参见`项目目录`)，或从[pgo-demo](https://github.com/pinguo/pgo-demo)克隆目录结构
-2. 修改配置文件app.json
+2. 修改配置文件(conf/app.json)
     ```json
     {
         "name": "pgo-demo",
@@ -102,9 +102,8 @@ TODO
     cd src
     GOPATH=$(cd .. && pwd) glide get github.com/pinguo/pgo
     ```
-4. 创建控制器
+4. 创建控制器(src/Controller/WelcomeController.go)
     ```go
-    Welcome控制器：src/Controller/WelcomeController.go
     package Controller
 
     import (
@@ -121,19 +120,20 @@ TODO
         data := pgo.Map{"text": "welcome to pgo-demo", "now": time.Now()}
         w.OutputJson(data, http.StatusOK)
     }
-
-    注册控制器：src/Controller/Init.go
+    ```
+5. 注册控制器(src/Controller/Init.go)
+    ```go
     package Controller
 
-    import "github.com/pinguo/pgo"
+        import "github.com/pinguo/pgo"
 
-    func init() {
-        container := pgo.App.GetContainer()
+        func init() {
+            container := pgo.App.GetContainer()
 
-        container.Bind(&WelcomeController{})
-    }
+            container.Bind(&WelcomeController{})
+        }
     ```
-5. 创建程序入口
+6. 创建程序入口
     ```go
     程序入口：src/Main/main.go
     package main
@@ -148,7 +148,7 @@ TODO
         pgo.Run()   // 运行程序
     }
     ```
-6. 编译运行
+7. 编译运行
     ```sh
     make start
     curl http://127.0.0.1:8000/welcome
