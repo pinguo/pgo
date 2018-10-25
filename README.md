@@ -42,9 +42,9 @@ PGO应用框架即"Pinguo GO application framework"，是Camera360广告服务�
     ├── Service/        # 服务目录(业务逻辑)
     ├── Struct/         # 结构目录(数据定义)
     ├── Test/           # 测试目录(单测/性能)
+    ├── vendor/         # 第三方依赖目录
     ├── glide.lock      # 项目依赖锁文件
-    ├── glide.yaml      # 项目依赖配置文件
-    └── vendor/         # 第三方依赖目录
+    └── glide.yaml      # 项目依赖配置文件
 ```
 
 ## 依赖管理
@@ -132,13 +132,13 @@ TODO
     ```go
     package Controller
 
-        import "github.com/pinguo/pgo"
+    import "github.com/pinguo/pgo"
 
-        func init() {
-            container := pgo.App.GetContainer()
+    func init() {
+        container := pgo.App.GetContainer()
 
-            container.Bind(&WelcomeController{})
-        }
+        container.Bind(&WelcomeController{})
+    }
     ```
 6. 创建程序入口(src/Main/main.go)
     ```go
@@ -151,7 +151,7 @@ TODO
     )
 
     func main() {
-        pgo.Run()   // 运行程序
+        pgo.Run() // 运行程序
     }
     ```
 7. 编译运行
