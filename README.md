@@ -140,9 +140,8 @@ TODO
             container.Bind(&WelcomeController{})
         }
     ```
-6. 创建程序入口
+6. 创建程序入口(src/Main/main.go)
     ```go
-    程序入口：src/Main/main.go
     package main
 
     import (
