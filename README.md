@@ -1,5 +1,5 @@
 # PGO
-PGO应用框架即"Pinguo GO application framework"，是Camera360广告服务端团队研发的一款简单、高性能、组件化的GO应用框架。受益于GO语言高性能与原生协程，业务从php+yii2升级到PGO后，线上表现单机处理能力提高5-10倍。在PGO框架的设计过程中，参考了Yii2的组件模式，熟悉yii2的php程序员可快速切换致PGO，其开发效率亦不输于PHP。
+PGO应用框架即"Pinguo GO application framework"，是Camera360广告服务端团队研发的一款简单、高性能、组件化的GO应用框架。受益于GO语言高性能与原生协程，业务从php+yii2升级到PGO后，线上表现单机处理能力提高5-10倍。在PGO的开发过程中，参考了php-yii2/php-msf/go-gin等框架的设计思想，平衡了运行性能与开发效率。
 
 
 参考文档：[pgo-docs](https://github.com/pinguo/pgo-docs)
