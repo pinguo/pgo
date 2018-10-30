@@ -414,7 +414,7 @@ func (t *TestController) ActionTest() {
 log := pgo.App.GetLog()
 
 // 获取组件(需要进行类型转换, 框架提供核心组件的获取方法)
-redis := pgo.App.Get("@pgo/Client/Redis/Client").(*Redis.Client)
+redis := pgo.App.Get("redis").(*Redis.Client)
 ```
 
 ### 其它
