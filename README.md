@@ -208,10 +208,11 @@ log, ok := cfg.Get("app.conponents.log").(map[string]interface{}) // 获取对�
 ### 控制器(Controller)
 - 支持HTTP(Controller)和命令行(Command)控制器
 - 支持`URL`路由和`正则`路由(详见Router组件)
-- 支持自定义动作(Action)和RESTFULL动作(Action)
+- 支持URL动作(Action)和RESTFULL动作(Action)
 - 支持参数验证(详见ValidateXxx方法)
 - 支持BeforeAction/AfterAction/FinishAction钩子
 - 支持HandlePanic钩子，捕获未处理异常
+- 支持过滤器(Filter)，TODO
 - 提供OutputXxx方法，方便输出各种类型数据
 
 示例：
@@ -234,8 +235,8 @@ func (w *WelcomeController) ActionIndex() {
 
 // URL路由控制器，根据url自动映射控制器及方法，不需要配置.
 // url的最后一段为动作名称，不存在则为index,
-// url除动作名的段为控制器名称，不存在则为index,
-// 例如. /path/to/welcome/say-hello，控制器类名为
+// url的其余部分为控制器名称，不存在则为index,
+// 例如：/path/to/welcome/say-hello，控制器类名为
 // Path/To/WelcomeController 动作方法名为ActionSayHello
 func (w *WelcomeController) ActionSayHello() {
     ctx := w.GetContext() // 获取PGO请求上下文件
@@ -270,7 +271,7 @@ func (w *WelcomeController) ActionSayHello() {
 }
 
 // 正则路由控制器，需要配置Router组件(components.router.rules)
-// 规则中捕获的参数通过动作函数的参数传递，没有则为空字符串.
+// 规则中捕获的参数通过动作函数参数传递，没有则为空字符串.
 // eg. "^/reg/eg/(\\w+)/(\\w+)$ => /welcome/regexp-example"
 func (w *WelcomeController) ActionRegexpExample(p1, p2 string) {
     data := pgo.Map{"p1": p1, "p2": p2}
@@ -389,7 +390,7 @@ func (t *TestController) ActionTest() {
 
 示例：
 ```go
-// 日志组件配置示例，配置位于app.components下
+// 日志组件配置示例，app.components.log
 // "log": { //组件ID, class固定为"@pgo/Dispatcher"
 //     "levels": "ALL",
 //     "traceLevels": "DEBUG"
@@ -411,10 +412,10 @@ func (t *TestController) ActionTest() {
 //     }
 // }
 
-// 获取日志组件
+// 获取日志组件(核心组件通过框架提供的方法获取)
 log := pgo.App.GetLog()
 
-// redis组件配置示例
+// redis组件配置示例，app.components.redis
 // "redis": {
 //     "class": "@pgo/Client/Redis/Client",
 //     "prefix": "pgo_",
@@ -430,7 +431,7 @@ log := pgo.App.GetLog()
 //     ]
 // }
 
-// 获取Redis组件
+// 获取Redis组件(非核心组件需要进行类型转换)
 redis := pgo.App.Get("redis").(*Redis.Client)
 ```
 
