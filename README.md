@@ -162,3 +162,31 @@ TODO
     curl http://127.0.0.1:8000/welcome
     ```
 
+## 使用示例
+### 项目配置
+- 项目配置文件`conf/app.json`, 可任意添加自定义配置文件如params.json
+- 目前仅支持json配置文件，后续会支持yaml配置文件
+- 所有配置文件均是一个json对象
+- 支持任意环境目录，环境目录中的同名字段会覆盖基础配置中的字段
+- 通过bin/<binName> --env production指定程序运行环境
+- 配置都有默认值，配置文件中的值会覆盖默认值(默认值参见组件说明)
+- 配置文件支持环境变量，格式`${envName|default}`，当envName不存在时使用default
+- 配置文件中路径及类名支持另名字符串，PGO定义的别名如下：
+    - `@app` 项目根目录绝对路径
+    - `@runtime` 项目运行时目录绝对路径
+    - `@view` 项目视图模板目录绝对路径
+    - `@pgo` PGO框架import路径
+
+使用配置：
+```go
+cfg := pgo.App.GetConfig() // 获取配置对象
+name := cfg.GetString("app.name", "demo") // 获取String，不存在返回"demo"
+procs := cfg.GetInt("app.GOMAXPROCS", 2) // 获取Integer, 不存在返回2
+price := cfg.GetFloat("params.goods.basePrice", 0) // 获取Float, 不存在返回0
+enable := cfg.GetBool("params.detect.enable", false) // 获取Bool, 不存在返回false
+
+// 除基本类型外，通过Get方法获取原始配置数据，需要进行类型转换
+plugins, ok := cfg.Get("app.servers.plugins").([]interface{}) // 获取数组
+log, ok := cfg.Get("app.conponents.log").(map[string]interface{}) // 获取对象
+```
+
