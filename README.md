@@ -417,4 +417,4 @@ component := pgo.App.Get("componentId").(*Xxx)
 ```
 
 ### 其它
-参见[pgo-docs](https://github.com/pinguo/pgo)
+参见[pgo-docs](https://github.com/pinguo/pgo-docs)
