@@ -416,3 +416,5 @@ log := pgo.App.Get("log").(*Dispatcher)
 component := pgo.App.Get("componentId").(*Xxx)
 ```
 
+### 其它
+参见[pgo-docs](https://github.com/pinguo/pgo)
