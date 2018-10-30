@@ -108,11 +108,9 @@ TODO
         }
     }
     ```
-3. 安装PGO
-    ```sh
-    cd src && glide init
-    GOPATH=$(cd .. && pwd) glide get github.com/pinguo/pgo
-    ```
+3. 安装PGO(以下两种方法均可)
+    - 在项目根目录执行`cd src && glide init && glide get github.com/pinguo/pgo`
+    - 如果已拷贝makefile，在项目根目录执行`make pgo`
 4. 创建控制器(src/Controller/WelcomeController.go)
     ```go
     package Controller
