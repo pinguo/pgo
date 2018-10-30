@@ -410,10 +410,26 @@ func (t *TestController) ActionTest() {
 //     }
 // }
 
-// 获取日志组件(仅示例，实际日志通过上下文进行操作)
+// 获取日志组件
 log := pgo.App.GetLog()
 
-// 获取组件(需要进行类型转换, 框架提供核心组件的获取方法)
+// redis组件配置示例
+// "redis": {
+//     "class": "@pgo/Client/Redis/Client",
+//     "prefix": "pgo_",
+//     "password": "",
+//     "db": 0,
+//     "maxIdleConn": 10,
+//     "maxIdleTime": "60s",
+//     "netTimeout": "1s",
+//     "probInterval": "0s",
+//     "servers": [
+//         "127.0.0.1:6379",
+//         "127.0.0.1:6380"
+//     ]
+// }
+
+// 获取Redis组件
 redis := pgo.App.Get("redis").(*Redis.Client)
 ```
 
