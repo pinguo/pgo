@@ -163,7 +163,7 @@ TODO
     ```
 
 ## 使用示例
-### 项目配置
+### 配置(Config)
 - 项目配置文件`conf/app.json`, 可任意添加自定义配置文件如params.json
 - 目前仅支持json配置文件，后续会支持yaml配置文件
 - 所有配置文件均是一个json对象
@@ -182,7 +182,7 @@ TODO
 cfg := pgo.App.GetConfig() // 获取配置对象
 name := cfg.GetString("app.name", "demo") // 获取String，不存在返回"demo"
 procs := cfg.GetInt("app.GOMAXPROCS", 2) // 获取Integer, 不存在返回2
-price := cfg.GetFloat("params.goods.basePrice", 0) // 获取Float, 不存在返回0
+price := cfg.GetFloat("params.goods.price", 0) // 获取Float, 不存在返回0
 enable := cfg.GetBool("params.detect.enable", false) // 获取Bool, 不存在返回false
 
 // 除基本类型外，通过Get方法获取原始配置数据，需要进行类型转换
@@ -190,10 +190,10 @@ plugins, ok := cfg.Get("app.servers.plugins").([]interface{}) // 获取数组
 log, ok := cfg.Get("app.conponents.log").(map[string]interface{}) // 获取对象
 ```
 
-### 控制器
+### 控制器(Controller)
 - 支持HTTP(Controller)和命令行(Command)控制器
 - 支持`URL`路由和`正则`路由(详见Router组件)
-- 支持自定义动作(Action)和RESTFULL动作
+- 支持自定义动作(Action)和RESTFULL动作(Action)
 - 支持参数验证(详见ValidateXxx方法)
 - 支持BeforeAction/AfterAction/FinishAction钩子
 - 支持HandlePanic钩子，捕获未处理异常
@@ -221,7 +221,7 @@ func (w *WelcomeController) ActionIndex() {
 // url的最后一段为动作名称，不存在则为index,
 // url除动作名的段为控制器名称，不存在则为index,
 // 例如. /path/to/welcome/say-hello，控制器类名为
-/// `Path/To/Welcome`Controller 动作方法名为Action`SayHello`
+// Path/To/WelcomeController 动作方法名为ActionSayHello
 func (w *WelcomeController) ActionSayHello() {
     ctx := w.GetContext() // 获取PGO请求上下文件
 
@@ -235,9 +235,9 @@ func (w *WelcomeController) ActionSayHello() {
     ctx.Info("request from welcome, name:%s, age:%d, ip:%s", name, age, ip)
     ctx.PushLog("clientIp", ctx.GetClientIp()) // 生成clientIp=xxxxx在pushlog中
 
-    // 调用业务逻辑，一个请求生命周期内的对象都要通过ctx.GetObject()获取，
+    // 调用业务逻辑，一个请求生命周期内的对象都要通过GetObject()获取，
     // 这样可自动查找注册的类，并注入请求上下文(Context)到对象中。
-    svc := ctx.GetObject("Service/Welcome").(*Service.Welcome)
+    svc := w.GetObject("Service/Welcome").(*Service.Welcome)
 
     // 添加耗时到profile日志中
     ctx.ProfileStart("Welcome.SayHello")
@@ -254,7 +254,7 @@ func (w *WelcomeController) ActionSayHello() {
     w.OutputJson(data, http.StatusOK)
 }
 
-// 正则路由控制器，需要在配置Router组件(components.router.rules)
+// 正则路由控制器，需要配置Router组件(components.router.rules)
 // 规则中捕获的参数通过动作函数的参数传递，没有则为空字符串.
 // eg. "^/reg/eg/(\\w+)/(\\w+)$ => /welcome/regexp-example"
 func (w *WelcomeController) ActionRegexpExample(p1, p2 string) {
@@ -265,4 +265,31 @@ func (w *WelcomeController) ActionRegexpExample(p1, p2 string) {
 // RESTFULL动作，url中没有指定动作名，使用请求方法作为动作的名称(需要大写)
 // 例如：GET方法请求ActionGET(), POST方法请求ActionPOST()
 func (w *WelcomeController) ActionGET() {}
+```
+
+### 上下文(Context)
+- 上下文存在于一个请求的生命周期中
+- 包含一个请求的上下文信息(输入、输出、自定义数据)
+- 继承pgo.Object的类通过pgo.Object.GetObject()会自动注入当前上下文
+
+示例：
+```go
+ctx.GetParam("p1", "")  // 获取GET/POST参数，默认空串
+ctx.GetQuery("p2", "")  // 获取GET参数，默认空串
+ctx.GetPost("p3", "")   // 获取POST参数，默认空串
+ctx.GetHeader("h1", "") // 获取Header，默认空串
+ctx.GetCookie("c1", "") // 获取Cookie，默认空串
+ctx.GetPath()           // 获取请求路径
+ctx.SetUserData("u1", "v1") // 设置自定义数据
+ctx.GetUserData("u1", "")   // 获取自定义数据
+ctx.GetClientIp()           // 获取客户端IP
+ctx.ValidateParam("p1", "").Do()    // 获取并验证GET/POST参数(有默认值)
+ctx.ValidateGet("p2").Do()          // 获取并验证GET参数(必选参数)
+ctx.ValidatePost("p3").Do()         // 获取并验证POST参数(必选参数)
+ctx.End(status, data)               // 输出数据到response
+
+ctx.Debug/Info/Notice/Warn/Error/Fatal()    // 日志输出函数(带日志跟踪ID)
+ctx.PushLog("key", "val")                   // 记录pushlog
+ctx.Counting("key", 1, 1)                   // 记录命中记数
+ctx.ProfileStart/ProfileStop/ProfileAdd()   // 记录耗时数据
 ```
