@@ -18,6 +18,7 @@ PGO应用框架即"Pinguo GO application framework"，是Camera360广告服务�
     - [上下文(Context)](#上下文context)
     - [容器(Container)](#容器container)
     - [组件(Component)](#组件component)
+    - [其它](#其它)
 
 ## 环境要求
 - GO 1.10+
@@ -410,10 +411,10 @@ func (t *TestController) ActionTest() {
 // }
 
 // 获取日志组件(仅示例，实际日志通过上下文进行操作)
-log := pgo.App.Get("log").(*Dispatcher)
+log := pgo.App.GetLog()
 
 // 获取组件(需要进行类型转换, 框架提供核心组件的获取方法)
-component := pgo.App.Get("componentId").(*Xxx)
+redis := pgo.App.Get("@pgo/Client/Redis/Client").(*Redis.Client)
 ```
 
 ### 其它
