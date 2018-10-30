@@ -293,3 +293,75 @@ ctx.PushLog("key", "val")                   // 记录pushlog
 ctx.Counting("key", 1, 1)                   // 记录命中记数
 ctx.ProfileStart/ProfileStop/ProfileAdd()   // 记录耗时数据
 ```
+
+### 容器(Container)
+- 容器用于类的注册与创建
+- 通过容器容器创建的会自动按序调用以下函数(如果有)：
+    - 构造函数(Construct)
+    - 属性设置(SetXxx)
+    - 初始函数(Init)
+- 构造函数支持任意个参数
+- 属性可以通过Set方法或导出字段设置
+
+示例：
+```go
+type People struct {
+    // 继承自pgo.Object可增加上下文支持，
+    // 由于组件是全局对象，没有请求上下文，
+    // 所以组件是不能继承自pgo.Object的。
+    pgo.Object
+
+    name    string
+    age     int
+    sex     string
+}
+
+// 构造函数，用于设置初始值
+func (p *People) Construct() {
+    p.name = "unknown"
+    p.age  = 0
+    p.sex  = "unknown"
+}
+
+// 初始函数，对象创建完成回调
+func (p *People) Init() {
+    fmt.Printf("people created, name:%s age:%d sex:%s\n", p.name, p.age, p.sex)
+}
+
+// 属性设置函数，根据配置自动调用
+func (p *People) SetName(name string) {
+    p.name = name
+}
+
+func (p *People) SetAge(age int) {
+    p.age = age
+}
+
+func (p *People) SetSex(sex string) {
+    p.sex = sex
+}
+
+// init方法通常放在包的Init.go文件中
+func init() {
+    container := pgo.App.GetContainer() // 获取容器对象
+    container.Bind(&People{}) // 注册类模板对象
+}
+
+// 获取People的新对象
+func (t *TestController) ActionTest() {
+    // 方法1: 通过类字符串获取
+    p1 := t.GetObject("People").(*People)
+
+    // 方法2: 如果构造函数定义有参数，可以传递构造参数
+    p2 := t.GetObject("People", arg1, arg2).(*People)
+
+    // 方法3: 指定配置属性(通常用于从配置文件生成组件)
+    conf := map[string]interface{} {
+        "class" "People",   // 配置必须包含class字段
+        "name": "zhang san",
+        "age": 30,
+        "sex": "male",
+    }
+    p3 := t.GetObject(conf).(*People)
+}
+```
