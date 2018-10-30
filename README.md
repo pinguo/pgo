@@ -15,6 +15,7 @@ PGO应用框架即"Pinguo GO application framework"，是Camera360广告服务�
 
 ## 项目目录
 规范：
+- 一个项目为一个独立的目录，不使用GO全局工作空间。
 - 项目的GOPATH为项目根目录，不要依赖系统的GOPATH。
 - 除GO标准库外，所有外部依赖代码放到"src/vendor"下。
 - 项目源码文件与目录使用大写驼峰(CamelCase)形式。
@@ -66,7 +67,10 @@ glide update            # 更新依赖包
 TODO
 
 ## 快速开始
-1. 创建项目目录(参见`项目目录`)，或从[pgo-demo](https://github.com/pinguo/pgo-demo)克隆目录结构
+1. 创建项目目录(以下三种方法均可)
+    - 参见《项目目录》手动创建
+    - 从[pgo-demo](https://github.com/pinguo/pgo-demo)克隆目录结构
+    - 拷贝makefile至项目根目录，执行`make init`创建目录
 2. 修改配置文件(conf/app.json)
     ```json
     {

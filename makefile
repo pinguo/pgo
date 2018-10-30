@@ -46,7 +46,7 @@ init:
 	@[ -d $(srcDir)/Service ] || mkdir $(srcDir)/Service
 	@[ -d $(srcDir)/Struct ] || mkdir $(srcDir)/Struct
 	@[ -d $(srcDir)/Test ] || mkdir $(srcDir)/Test
-	@[ -f $(srcDir)/glide.yaml ] || (cd $(srcDir) && echo Y | glide init)
+	@[ -f $(srcDir)/glide.yaml ] || (cd $(srcDir) && echo Y | $(glideBin) init)
 
 help:
 	@echo "make start    start $(binName)"
