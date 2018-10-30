@@ -1,5 +1,5 @@
 # PGO
-PGO应用框架即"Pinguo GO application framework"，是Camera360广告服务端团队研发的一款简单、高性能、组件化的GO应用框架。受益于GO语言高性能与原生协程，业务从php+yii2升级到PGO后，线上表现单机处理能力提高5-10倍，从实际使用中看其开发效率亦不输于PHP。
+PGO应用框架即"Pinguo GO application framework"，是Camera360广告服务端团队研发的一款简单、高性能、组件化的GO应用框架。受益于GO语言高性能与原生协程，业务从php+yii2升级到PGO后，线上表现单机处理能力提高5-10倍。在PGO框架的设计过程中，参考了Yii2的组件模式，熟悉yii2的php程序员可快速切换致PGO，其开发效率亦不输于PHP。
 
 
 参考文档：[pgo-docs](https://github.com/pinguo/pgo-docs)
@@ -296,7 +296,7 @@ ctx.ProfileStart/ProfileStop/ProfileAdd()   // 记录耗时数据
 
 ### 容器(Container)
 - 容器用于类的注册与创建
-- 通过容器容器创建的会自动按序调用以下函数(如果有)：
+- 通过容器创建的对象会自动按序调用以下函数(如果有)：
     - 构造函数(Construct)
     - 属性设置(SetXxx)
     - 初始函数(Init)
@@ -316,19 +316,19 @@ type People struct {
     sex     string
 }
 
-// 构造函数，用于设置初始值
+// 可选构造函数，用于设置初始值
 func (p *People) Construct() {
     p.name = "unknown"
     p.age  = 0
     p.sex  = "unknown"
 }
 
-// 初始函数，对象创建完成回调
+// 可选初始函数，对象创建完成回调
 func (p *People) Init() {
     fmt.Printf("people created, name:%s age:%d sex:%s\n", p.name, p.age, p.sex)
 }
 
-// 属性设置函数，根据配置自动调用
+// 可选设置函数，根据配置自动调用
 func (p *People) SetName(name string) {
     p.name = name
 }
@@ -364,4 +364,42 @@ func (t *TestController) ActionTest() {
     }
     p3 := t.GetObject(conf).(*People)
 }
+```
+
+### 组件(Component)
+- 组件为全局单例对象
+- 组件第一次使用时自动构造、配置和初始化
+- 组件是全局对象没有上下文
+- 组件通常使用配置文件进行配置
+
+示例：
+```go
+// 日志组件配置示例，配置位于app.components下
+// "log": {     //组件ID, class固定为"@pgo/Dispatcher"
+//     "levels": "ALL",
+//     "traceLevels": "DEBUG"
+//     "chanLen": 1000,
+//     "flushInterval": "60s",
+//     "targets": {
+//         "info": {
+//             "class": "@pgo/FileTarget",
+//             "levels": "DEBUG,INFO,NOTICE",
+//             "filePath": "@runtime/info.log",
+//             "maxLogFile": 10
+//         },
+//         "error": {
+//             "class": "@pgo/FileTarget",
+//             "levels": "WARN,ERROR,FATAL",
+//             "filePath": "@runtime/error.log",
+//             "maxLogFile": 10
+//         }
+//     }
+// }
+
+// 获取日志组件(仅示例，实际日志通过上下文进行操作)
+log := pgo.App.Get("log").(*Dispatcher)
+
+// 获取组件(需要进行类型转换, 框架提供核心组件的获取方法)
+component := pgo.App.Get("componentId").(*Xxx)
+
 ```
