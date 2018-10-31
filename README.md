@@ -31,7 +31,7 @@ PGO应用框架即"Pinguo GO application framework"，是Camera360广告服务�
 规范：
 - 一个项目为一个独立的目录，不使用GO全局工作空间。
 - 项目的GOPATH为项目根目录，不要依赖系统的GOPATH。
-- 除GO标准库外，所有外部依赖代码放到"src/vendor"下。
+- 除GO标准库外，所有外部依赖代码放入"src/vendor"。
 - 项目源码文件与目录使用大写驼峰(CamelCase)形式。
 
 ```
@@ -123,8 +123,7 @@ TODO
     }
     ```
 3. 安装PGO(以下两种方法均可)
-    - 在项目根目录执行`cd src && glide init && glide get github.com/pinguo/pgo`
-    - 如果是拉取的[pgo-demo](https://github.com/pinguo/pgo-demo)仓库代码，执行`cd src && glide install`
+    - 在项目根目录执行`export GOPATH=$(pwd) && cd src && glide init && glide get github.com/pinguo/pgo`
     - 如果已拷贝makefile，在项目根目录执行`make pgo`
 4. 创建控制器(src/Controller/WelcomeController.go)
     ```go
@@ -183,7 +182,7 @@ TODO
 - 目前仅支持json配置文件，后续会支持yaml配置文件
 - 所有配置文件均是一个json对象
 - 支持任意环境目录，环境目录中的同名字段会覆盖基础配置中的字段
-- 通过bin/binName --env production指定程序运行环境目录`production`
+- 通过bin/binName --env production指定程序环境目录`production`
 - 配置都有默认值，配置文件中的值会覆盖默认值(默认值参见组件说明)
 - 配置文件支持环境变量，格式`${envName|default}`，当envName不存在时使用default
 - 配置文件中路径及类名支持别名字符串，PGO定义的别名如下：
@@ -233,7 +232,7 @@ func (w *WelcomeController) ActionIndex() {
     w.OutputJson(data, http.StatusOK)
 }
 
-// URL路由控制器，根据url自动映射控制器及方法，不需要配置.
+// URL路由动作，根据url自动映射控制器及方法，不需要配置.
 // url的最后一段为动作名称，不存在则为index,
 // url的其余部分为控制器名称，不存在则为index,
 // 例如：/path/to/welcome/say-hello，控制器类名为
@@ -270,7 +269,7 @@ func (w *WelcomeController) ActionSayHello() {
     w.OutputJson(data, http.StatusOK)
 }
 
-// 正则路由控制器，需要配置Router组件(components.router.rules)
+// 正则路由动作，需要配置Router组件(components.router.rules)
 // 规则中捕获的参数通过动作函数参数传递，没有则为空字符串.
 // eg. "^/reg/eg/(\\w+)/(\\w+)$ => /welcome/regexp-example"
 func (w *WelcomeController) ActionRegexpExample(p1, p2 string) {
@@ -300,7 +299,7 @@ ctx.SetUserData("u1", "v1") // 设置自定义数据
 ctx.GetUserData("u1", "")   // 获取自定义数据
 ctx.GetClientIp()           // 获取客户端IP
 ctx.ValidateParam("p1", "").Do()    // 获取并验证GET/POST参数(有默认值)
-ctx.ValidateGet("p2").Do()          // 获取并验证GET参数(必选参数)
+ctx.ValidateQuery("p2").Do()        // 获取并验证GET参数(必选参数)
 ctx.ValidatePost("p3").Do()         // 获取并验证POST参数(必选参数)
 ctx.End(status, data)               // 输出数据到response
 
