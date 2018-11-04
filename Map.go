@@ -68,6 +68,5 @@ func (sm StringMap) Clear() {
 
 // ToJSON 转换成 json
 func (sm StringMap) ToJSON() ([]byte, error) {
-    res, err := json.Marshal(sm)
-    return res, err
+    return json.Marshal(sm)
 }
