@@ -39,9 +39,6 @@ var (
     EmptyObject struct{}
 )
 
-// alias for map[string]interface
-type Map map[string]interface{}
-
 func init() {
     // global initialization
     aliases = make(map[string]string)
