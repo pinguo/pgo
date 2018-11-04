@@ -135,7 +135,7 @@ func CreateObject(class interface{}, params ...interface{}) interface{} {
     panic("unknown class: " + className)
 }
 
-// configure object using the given configuration
+// Configure configure object using the given configuration
 func Configure(obj interface{}, config map[string]interface{}) {
     // skip empty configuration
     if n := len(config); n == 0 {
@@ -155,11 +155,12 @@ func Configure(obj interface{}, config map[string]interface{}) {
     }
 
     if v.Kind() != reflect.Ptr {
-        panic("Configure: obj require a pointer or a reflect.Value of pointer")
+        panic(fmt.Sprintf("Configure: %T require a pointer or a reflect.Value of pointer", obj))
     }
 
     // rv refer to the value of pointer
     rv := v.Elem()
+    isStruct := rv.Kind() == relect.Struct
 
     for key, val := range config {
         if key == "class" {
@@ -177,7 +178,7 @@ func Configure(obj interface{}, config map[string]interface{}) {
         }
 
         // check object's public field
-        if rv.Kind() == reflect.Struct {
+        if isStruct {
             field := rv.FieldByName(key)
             if field.IsValid() && field.CanSet() {
                 newVal := reflect.ValueOf(val).Convert(field.Type())
@@ -188,7 +189,10 @@ func Configure(obj interface{}, config map[string]interface{}) {
     }
 }
 
-// construct and initialize object
+// ConstructAndInit construct and initialize object
+// 以 params 作为参数，调用指针实例的Contruct 方法
+// 根据 config 中的键值，配置实例的 Field；若实例无相应 Field 而有相应的 SetField 方法，则调用相应方法
+// 调用实例 Init 方法，Init 方法不能包含参数
 func ConstructAndInit(obj interface{}, config map[string]interface{}, params ...interface{}) {
     var v reflect.Value
     if _, ok := obj.(reflect.Value); ok {
@@ -198,12 +202,12 @@ func ConstructAndInit(obj interface{}, config map[string]interface{}, params ...
     }
 
     if v.Kind() != reflect.Ptr {
-        panic("ConstructAndInit: obj require a pointer or a reflect.Value of pointer")
+        panic(fmt.Sprintf("ConstructAndInit: %T require a pointer or a reflect.Value of pointer", obj))
     }
 
     // call Construct method
     if cm := v.MethodByName(ConstructMethod); cm.IsValid() {
-        in := make([]reflect.Value, 0)
+        in := make([]reflect.Value, cm.Type().NumIn())
         for _, arg := range params {
             in = append(in, reflect.ValueOf(arg))
         }
@@ -216,7 +220,9 @@ func ConstructAndInit(obj interface{}, config map[string]interface{}, params ...
 
     // call Init method
     if im := v.MethodByName(InitMethod); im.IsValid() {
-        in := make([]reflect.Value, 0)
-        im.Call(in)
+        if im.Type().NumIn() != 0 {
+            panic(fmt.Sprintf("%s method would not contain any input parameters. Struct: %T", InitMethod, obj))
+        }
+        im.Call(nil)
     }
 }
