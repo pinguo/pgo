@@ -11,6 +11,7 @@ import (
     "github.com/pinguo/pgo/Util"
 )
 
+// Config the config component
 type Config struct {
     parsers map[string]IConfigParser
     data    map[string]interface{}
@@ -24,22 +25,26 @@ func (c *Config) Construct() {
     c.paths = make([]string, 0)
 
     confPath := filepath.Join(App.GetBasePath(), "conf")
-    if f, e := os.Stat(confPath); os.IsNotExist(e) || !f.IsDir() {
-        panic("invalid config path, " + confPath)
+    if f, _ := os.Stat(confPath); f != nil && f.IsDir() {
+        c.paths = append(c.paths, confPath)
+    } else {
+        panic("Config: invalid conf path, " + confPath)
     }
 
-    c.AddPath(confPath)
-    c.AddPath(filepath.Join(confPath, App.GetEnv()))
+    envPath := filepath.Join(confPath, App.GetEnv())
+    if f, _ := os.Stat(envPath); f != nil && f.IsDir() {
+        c.paths = append(c.paths, envPath)
+    }
 
     c.AddParser("json", &JsonConfigParser{})
 }
 
-// add parser for file with ext extension
+// AddParser add parser for file with ext extension
 func (c *Config) AddParser(ext string, parser IConfigParser) {
     c.parsers[ext] = parser
 }
 
-// add path to end of search paths
+// AddPath add path to end of search paths
 func (c *Config) AddPath(path string) {
     paths := make([]string, 0)
     for _, v := range c.paths {
@@ -51,6 +56,9 @@ func (c *Config) AddPath(path string) {
     c.paths = append(paths, path)
 }
 
+// GetBool get bool value from config,
+// key is dot separated config key,
+// dft is default value if key not exists.
 func (c *Config) GetBool(key string, dft bool) bool {
     if v := c.Get(key); v != nil {
         return Util.ToBool(v)
@@ -59,6 +67,9 @@ func (c *Config) GetBool(key string, dft bool) bool {
     return dft
 }
 
+// GetInt get int value from config,
+// key is dot separated config key,
+// dft is default value if key not exists.
 func (c *Config) GetInt(key string, dft int) int {
     if v := c.Get(key); v != nil {
         return Util.ToInt(v)
@@ -67,6 +78,9 @@ func (c *Config) GetInt(key string, dft int) int {
     return dft
 }
 
+// GetFloat get float value from config,
+// key is dot separated config key,
+// dft is default value if key not exists.
 func (c *Config) GetFloat(key string, dft float64) float64 {
     if v := c.Get(key); v != nil {
         return Util.ToFloat(v)
@@ -75,6 +89,9 @@ func (c *Config) GetFloat(key string, dft float64) float64 {
     return dft
 }
 
+// GetString get string value from config,
+// key is dot separated config key,
+// dft is default value if key not exists.
 func (c *Config) GetString(key string, dft string) string {
     if v := c.Get(key); v != nil {
         return Util.ToString(v)
@@ -83,7 +100,10 @@ func (c *Config) GetString(key string, dft string) string {
     return dft
 }
 
-// get config by dot separated key, empty key for all loaded config
+// Get get value by dot separated key,
+// the first part of key is file name
+// without extension. if key is empty,
+// all loaded config will be returned.
 func (c *Config) Get(key string) interface{} {
     ks := strings.Split(key, ".")
     if _, ok := c.data[ks[0]]; !ok {
@@ -96,7 +116,10 @@ func (c *Config) Get(key string) interface{} {
     return Util.MapGet(c.data, key)
 }
 
-// set config by dot separated key, empty key for root, nil val for clear
+// Set set value by dot separated key,
+// if key is empty, the value will set
+// to root, if val is nil, the key will
+// be deleted.
 func (c *Config) Set(key string, val interface{}) {
     c.lock.Lock()
     defer c.lock.Unlock()
@@ -104,7 +127,8 @@ func (c *Config) Set(key string, val interface{}) {
     Util.MapSet(c.data, key, val)
 }
 
-// load config file
+// Load load config file under the search paths.
+// file under env sub path will be merged.
 func (c *Config) Load(name string) {
     c.lock.Lock()
     defer c.lock.Unlock()
@@ -130,10 +154,11 @@ func (c *Config) Load(name string) {
     }
 }
 
-// parser for json config
+// JsonConfigParser parser for json config
 type JsonConfigParser struct {
 }
 
+// Parse parse json config, environment value like ${env||default} will expand
 func (j *JsonConfigParser) Parse(path string) map[string]interface{} {
     h, e := os.Open(path)
     if e != nil {
