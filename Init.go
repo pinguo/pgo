@@ -13,7 +13,7 @@ import (
 const (
     ModeWeb            = 1
     ModeCmd            = 2
-    DefaultEnv         = "prod"
+    DefaultEnv         = "production"
     DefaultController  = "Index"
     DefaultAction      = "Index"
     DefaultServerAddr  = "0.0.0.0:8000"
@@ -31,24 +31,19 @@ const (
 )
 
 var (
-    aliases map[string]string
-    aliasRe *regexp.Regexp
-    logger  *Logger
-
-    App         *Application
+    App         = &Application{}
+    startTime   = time.Now()
+    aliasMap    = make(map[string]string)
+    aliasRe     = regexp.MustCompile(`^@[^\\/]+`)
+    logger      *Logger
     EmptyObject struct{}
 )
 
-// alias for map[string]interface
+// Map alias for map[string]interface{}
 type Map map[string]interface{}
 
 func init() {
-    // global initialization
-    aliases = make(map[string]string)
-    aliasRe = regexp.MustCompile(`^@[^\\/]+`)
-
-    // new app instance
-    App = &Application{}
+    // initialize app
     ConstructAndInit(App, nil)
 
     // bind core object
@@ -61,12 +56,12 @@ func init() {
     App.container.Bind(&View{})
 }
 
-// run application
+// Run run app
 func Run() {
     App.GetServer().Serve()
 }
 
-// get global logger
+// GLogger get global logger
 func GLogger() *Logger {
     if logger == nil {
         // defer creation to first call, give opportunity to customize log target
@@ -76,40 +71,44 @@ func GLogger() *Logger {
     return logger
 }
 
-// set alias for path, @app => /path/to/base
+// StartDuration time duration since app starts
+func StartDuration() time.Duration {
+    return time.Since(startTime)
+}
+
+// SetAlias set path alias, eg. @app => /path/to/base
 func SetAlias(alias, path string) {
     if len(alias) > 0 && alias[0] != '@' {
         alias = "@" + alias
     }
 
     if strings.IndexAny(alias, `\/`) != -1 {
-        panic("SetAlias: invalid alias format, " + alias)
+        panic("SetAlias: invalid alias, " + alias)
     }
 
     if len(alias) <= 1 || len(path) == 0 {
-        panic("SetAlias: alias or path cannot be empty")
+        panic("SetAlias: empty alias or path, " + alias)
     }
 
-    aliases[alias] = path
+    aliasMap[alias] = path
 }
 
-// resolve path alias, @runtime/app.log => /path/to/runtime/app.log
+// GetAlias resolve path alias, eg. @runtime/app.log => /path/to/runtime/app.log
 func GetAlias(alias string) string {
-    rn := aliasRe.FindString(alias)
-
-    // not an alias
-    if len(rn) == 0 {
-        return alias
-    }
-
-    if path, ok := aliases[rn]; ok {
-        return strings.Replace(alias, rn, path, 1)
+    if prefix := aliasRe.FindString(alias); len(prefix) == 0 {
+        return alias // not an alias
+    } else if path, ok := aliasMap[prefix]; ok {
+        return strings.Replace(alias, prefix, path, 1)
     }
 
     return ""
 }
 
-// create object using the given configuration
+// CreateObject create object using the given configuration,
+// class can be a string or a map contain "class" field,
+// if a map is specified, fields except "class" will be
+// treated as properties of the object to be created,
+// params is optional parameters for Construct method.
 func CreateObject(class interface{}, params ...interface{}) interface{} {
     var className string
     var config map[string]interface{}
@@ -119,7 +118,7 @@ func CreateObject(class interface{}, params ...interface{}) interface{} {
         className = v
     case map[string]interface{}:
         if _, ok := v["class"]; !ok {
-            panic(`CreateObject: object configuration require "class" element`)
+            panic(`CreateObject: class configuration require "class" field`)
         }
 
         className = v["class"].(string)
@@ -135,7 +134,9 @@ func CreateObject(class interface{}, params ...interface{}) interface{} {
     panic("unknown class: " + className)
 }
 
-// configure object using the given configuration
+// Configure configure object using the given configuration
+// obj is a pointer or reflect.Value of a pointer,
+// config is the configuration map for properties.
 func Configure(obj interface{}, config map[string]interface{}) {
     // skip empty configuration
     if n := len(config); n == 0 {
@@ -155,7 +156,7 @@ func Configure(obj interface{}, config map[string]interface{}) {
     }
 
     if v.Kind() != reflect.Ptr {
-        panic("Configure: obj require a pointer or a reflect.Value of pointer")
+        panic("Configure: obj require a pointer or reflect.Value of a pointer")
     }
 
     // rv refer to the value of pointer
@@ -177,18 +178,19 @@ func Configure(obj interface{}, config map[string]interface{}) {
         }
 
         // check object's public field
-        if rv.Kind() == reflect.Struct {
-            field := rv.FieldByName(key)
-            if field.IsValid() && field.CanSet() {
-                newVal := reflect.ValueOf(val).Convert(field.Type())
-                field.Set(newVal)
-                continue
-            }
+        field := rv.FieldByName(key)
+        if field.IsValid() && field.CanSet() {
+            newVal := reflect.ValueOf(val).Convert(field.Type())
+            field.Set(newVal)
+            continue
         }
     }
 }
 
-// construct and initialize object
+// ConstructAndInit construct and initialize object,
+// obj is a pointer or reflect.Value of a pointer,
+// config is configuration map for properties,
+// params is optional parameters for Construct method.
 func ConstructAndInit(obj interface{}, config map[string]interface{}, params ...interface{}) {
     var v reflect.Value
     if _, ok := obj.(reflect.Value); ok {
@@ -198,7 +200,7 @@ func ConstructAndInit(obj interface{}, config map[string]interface{}, params ...
     }
 
     if v.Kind() != reflect.Ptr {
-        panic("ConstructAndInit: obj require a pointer or a reflect.Value of pointer")
+        panic("ConstructAndInit: obj require a pointer or reflect.Value of a pointer")
     }
 
     // call Construct method
