@@ -134,7 +134,7 @@ func CreateObject(class interface{}, params ...interface{}) interface{} {
     panic("unknown class: " + className)
 }
 
-// Configure configure object using the given configuration
+// Configure configure object using the given configuration,
 // obj is a pointer or reflect.Value of a pointer,
 // config is the configuration map for properties.
 func Configure(obj interface{}, config map[string]interface{}) {

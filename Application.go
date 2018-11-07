@@ -11,7 +11,8 @@ import (
     "sync"
 )
 
-// app initialization steps:
+// Application the pgo app,
+// initialization steps:
 // 1. import pgo: pgo.init()
 // 2. customize app: optional
 // 3. pgo.Run(): serve
@@ -19,7 +20,7 @@ import (
 // configuration:
 // {
 //     "name": "app-name",
-//     "GOMAXPROCS": 4,
+//     "GOMAXPROCS": 2,
 //     "runtimePath": "@app/runtime",
 //     "publicPath": "@app/public",
 //     "viewPath": "@viewPath",
@@ -62,7 +63,7 @@ func (app *Application) Construct() {
 }
 
 func (app *Application) Init() {
-    env := flag.String("env", "", "set running env, eg. --env prod")
+    env := flag.String("env", "", "set running env, eg. --env production")
     cmd := flag.String("cmd", "", "set running cmd, eg. --cmd /foo/bar")
     base := flag.String("base", "", "set base path, eg. --base /base/path")
     flag.Parse()
@@ -70,11 +71,6 @@ func (app *Application) Init() {
     // overwrite running env
     if len(*env) > 0 {
         app.env = *env
-    } else {
-        env := os.Getenv("env")
-        if len(env) > 0 {
-            app.env = env
-        }
     }
 
     // overwrite running mode
@@ -142,46 +138,57 @@ func (app *Application) Init() {
     }
 }
 
+// GetMode get running mode, web:1, cmd:2
 func (app *Application) GetMode() int {
     return app.mode
 }
 
+// GetEnv get running env
 func (app *Application) GetEnv() string {
     return app.env
 }
 
+// GetName get app name, default is executable name
 func (app *Application) GetName() string {
     return app.name
 }
 
+// GetBasePath get base path, default is parent of executable
 func (app *Application) GetBasePath() string {
     return app.basePath
 }
 
+// GetRuntimePath get runtime path, default is @app/runtime
 func (app *Application) GetRuntimePath() string {
     return app.runtimePath
 }
 
+// GetPublicPath get public path, default is @app/public
 func (app *Application) GetPublicPath() string {
     return app.publicPath
 }
 
+// GetViewPath get view path, default is @app/view
 func (app *Application) GetViewPath() string {
     return app.viewPath
 }
 
+// GetConfig get config component
 func (app *Application) GetConfig() *Config {
     return app.config
 }
 
+// GetContainer get container component
 func (app *Application) GetContainer() *Container {
     return app.container
 }
 
+// GetServer get server component
 func (app *Application) GetServer() *Server {
     return app.server
 }
 
+// GetRouter get router component
 func (app *Application) GetRouter() *Router {
     if app.router == nil {
         app.router = app.Get("router").(*Router)
@@ -190,6 +197,7 @@ func (app *Application) GetRouter() *Router {
     return app.router
 }
 
+// GetLog get log component
 func (app *Application) GetLog() *Dispatcher {
     if app.log == nil {
         app.log = app.Get("log").(*Dispatcher)
@@ -198,6 +206,7 @@ func (app *Application) GetLog() *Dispatcher {
     return app.log
 }
 
+// GetStatus get status component
 func (app *Application) GetStatus() *Status {
     if app.status == nil {
         app.status = app.Get("status").(*Status)
@@ -206,6 +215,7 @@ func (app *Application) GetStatus() *Status {
     return app.status
 }
 
+// GetI18n get i18n component
 func (app *Application) GetI18n() *I18n {
     if app.i18n == nil {
         app.i18n = app.Get("i18n").(*I18n)
@@ -214,6 +224,7 @@ func (app *Application) GetI18n() *I18n {
     return app.i18n
 }
 
+// GetView get view component
 func (app *Application) GetView() *View {
     if app.view == nil {
         app.view = app.Get("view").(*View)
@@ -222,6 +233,7 @@ func (app *Application) GetView() *View {
     return app.view
 }
 
+// Get get component by id
 func (app *Application) Get(id string) interface{} {
     if _, ok := app.components[id]; !ok {
         app.loadComponent(id)
