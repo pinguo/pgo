@@ -13,6 +13,7 @@ type bindItem struct {
 
 type OnReflectNew func(reflect.Value)
 
+// Container the container component
 type Container struct {
     items map[string]*bindItem
 }
@@ -21,8 +22,8 @@ func (c *Container) Construct() {
     c.items = make(map[string]*bindItem)
 }
 
-// bind reflect.Type to class name
-// param i must be a pointer
+// Bind bind reflect.Type to class name,
+// param i must be a pointer.
 func (c *Container) Bind(i interface{}) {
     iv := reflect.ValueOf(i)
     if iv.Kind() != reflect.Ptr {
@@ -58,13 +59,16 @@ func (c *Container) Bind(i interface{}) {
     c.items[name] = &item
 }
 
-// check if the class name has bound
+// Has check if the class has bound
 func (c *Container) Has(name string) bool {
     _, ok := c.items[name]
     return ok
 }
 
-// get new object of the class name
+// Get get new object of the class,
+// name is class name string,
+// config is properties map,
+// params is optional construct parameters.
 func (c *Container) Get(name string, config map[string]interface{}, params ...interface{}) interface{} {
     if v, _ := c.GetValue(name, config, params...); v.IsValid() {
         return v.Interface()
@@ -72,7 +76,10 @@ func (c *Container) Get(name string, config map[string]interface{}, params ...in
     return nil
 }
 
-// get reflect.Value and bind info of the class
+// GetValue get reflect.Value and binding info of the class.
+// name is class name string,
+// config is properties map,
+// params is optional construct parameters.
 func (c *Container) GetValue(name string, config map[string]interface{}, params ...interface{}) (reflect.Value, interface{}) {
     item, ok := c.items[name]
     if !ok {
