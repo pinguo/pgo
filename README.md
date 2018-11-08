@@ -184,7 +184,7 @@ TODO
 - 支持任意环境目录，环境目录中的同名字段会覆盖基础配置中的字段
 - 通过bin/binName --env production指定程序环境目录`production`
 - 配置都有默认值，配置文件中的值会覆盖默认值(默认值参见组件说明)
-- 配置文件支持环境变量，格式`${envName|default}`，当envName不存在时使用default
+- 配置文件支持环境变量，格式`${envName||default}`，当envName不存在时使用default
 - 配置文件中路径及类名支持别名字符串，PGO定义的别名如下：
     - `@app` 项目根目录绝对路径
     - `@runtime` 项目运行时目录绝对路径
