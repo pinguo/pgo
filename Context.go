@@ -15,6 +15,7 @@ import (
     "github.com/pinguo/pgo/Util"
 )
 
+// Context pgo request context.
 type Context struct {
     input        *http.Request
     output       http.ResponseWriter
