@@ -18,7 +18,7 @@ import (
     "github.com/pinguo/pgo/Util"
 )
 
-// server configuration:
+// Server the server component, configuration:
 // "server": {
 //     "addr": "0.0.0.0:8000",
 //     "readTimeout": "30s",
@@ -126,6 +126,7 @@ func (s *Server) Serve() {
             ds.ListenAndServe()
         }()
     }
+
     if App.GetMode() == ModeCmd {
         GLogger().Info("start running command %s", flag.Lookup("cmd").Value)
         s.ServeCMD()

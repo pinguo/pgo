@@ -90,7 +90,7 @@ func getValidateValue(data interface{}, name string, dft ...interface{}) (interf
     return value, useDft
 }
 
-// validator for bool value
+// BoolValidator validator for bool value
 type BoolValidator struct {
     Name   string
     UseDft bool
@@ -108,7 +108,7 @@ func (b *BoolValidator) Do() bool {
     return b.Value
 }
 
-// validator for int value
+// IntValidator validator for int value
 type IntValidator struct {
     Name   string
     UseDft bool
@@ -148,7 +148,7 @@ func (i *IntValidator) Do() int {
     return i.Value
 }
 
-// validator for float value
+// FloatValidator validator for float value
 type FloatValidator struct {
     Name   string
     UseDft bool
@@ -173,7 +173,7 @@ func (f *FloatValidator) Do() float64 {
     return f.Value
 }
 
-// validator for string value
+// StringValidator validator for string value
 type StringValidator struct {
     Name   string
     UseDft bool
@@ -336,7 +336,7 @@ func (s *StringValidator) Do() string {
     return s.Value
 }
 
-// int slice validator
+// IntSliceValidator validator for int slice value
 type IntSliceValidator struct {
     Name  string
     Value []int
@@ -346,7 +346,7 @@ func (i *IntSliceValidator) Do() []int {
     return i.Value
 }
 
-// float slice validator
+// FloatSliceValidator validator for float slice value
 type FloatSliceValidator struct {
     Name  string
     Value []float64
@@ -356,7 +356,7 @@ func (f *FloatSliceValidator) Do() []float64 {
     return f.Value
 }
 
-// string slice validator
+// StringSliceValidator validator for string slice value
 type StringSliceValidator struct {
     Name   string
     UseDft bool
@@ -406,7 +406,7 @@ func (s *StringSliceValidator) Do() []string {
     return s.Value
 }
 
-// json validator
+// JsonValidator validator for json value
 type JsonValidator struct {
     Name   string
     UseDft bool
