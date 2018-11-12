@@ -7,11 +7,11 @@ import (
     "github.com/pinguo/pgo/Util"
 )
 
-// i18n component, lang format: ll-CC or ll
-// lower case lang code, upper case area code
-// lang file located in conf directory with
-// name format: i18n_{lang}.json
-// configuration:
+// I18n the internationalization component,
+// language format is ll-CC or ll,
+// lower case lang code, upper case area code.
+// lang file name format is i18n_{lang}.json,
+// and located in conf directory, configuration:
 // "i18n": {
 //     "sourceLang": "en",
 //     "targetLang": [ "en", "zh-CN", "zh-TW"]
@@ -26,10 +26,12 @@ func (i *I18n) Construct() {
     i.targetLang = make(map[string]bool)
 }
 
+// SetSourceLang set language of source
 func (i *I18n) SetSourceLang(lang string) {
     i.sourceLang = lang
 }
 
+// SetTargetLang set language of target
 func (i *I18n) SetTargetLang(targets []interface{}) {
     for _, v := range targets {
         lang := Util.ToString(v)
@@ -37,7 +39,7 @@ func (i *I18n) SetTargetLang(targets []interface{}) {
     }
 }
 
-// translate message to target lang, lang format is one of the following:
+// Translate message to target lang, lang format is one of the following:
 // 1. accept-language header value: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7
 // 2. ll-CC: lower case lang code and upper case area code, zh-CN
 // 3. ll: lower case of lang code without area code, zh

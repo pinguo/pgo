@@ -9,7 +9,7 @@ import (
     "sync"
 )
 
-// view component, configuration:
+// View the view component, configuration:
 // "view": {
 //     "suffix": ".html",
 //     "commons": [
@@ -31,7 +31,7 @@ func (v *View) Construct() {
     v.templates = make(map[string]*template.Template)
 }
 
-// set view file suffix
+// SetSuffix set view file suffix, default is ".html"
 func (v *View) SetSuffix(suffix string) {
     if len(suffix) > 0 && suffix[0] != '.' {
         suffix = "." + suffix
@@ -42,7 +42,7 @@ func (v *View) SetSuffix(suffix string) {
     }
 }
 
-// set common view files
+// SetCommons set common view files
 func (v *View) SetCommons(commons []interface{}) {
     for _, p := range commons {
         if view, ok := p.(string); ok {
@@ -53,19 +53,19 @@ func (v *View) SetCommons(commons []interface{}) {
     }
 }
 
-// add custom func map
+// AddFuncMap add custom func map
 func (v *View) AddFuncMap(funcMap template.FuncMap) {
     v.funcMap = funcMap
 }
 
-// render view and return result
+// Render render view and return result
 func (v *View) Render(view string, data interface{}) []byte {
     buf := &bytes.Buffer{}
     v.Display(buf, view, data)
     return buf.Bytes()
 }
 
-// render view and display result
+// Display render view and display result
 func (v *View) Display(w io.Writer, view string, data interface{}) {
     view = v.normalize(view)
     tpl := v.getTemplate(view)

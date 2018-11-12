@@ -28,6 +28,7 @@ const (
     rotateDaily  = 2
 )
 
+// LevelToString convert int level to string
 func LevelToString(level int) string {
     switch level {
     case LevelNone:
@@ -51,6 +52,7 @@ func LevelToString(level int) string {
     }
 }
 
+// StringToLevel convert string to int level
 func StringToLevel(level string) int {
     switch strings.ToUpper(level) {
     case "NONE":
@@ -88,6 +90,7 @@ func parseLevels(str string) int {
     return levels
 }
 
+// LogItem represent an item of log
 type LogItem struct {
     When    time.Time
     Level   int
@@ -97,7 +100,7 @@ type LogItem struct {
     Message string
 }
 
-// log component, configuration:
+// Dispatcher the log component, configuration:
 // "log": {
 //     "levels": "ALL",
 //     "traceLevels": "DEBUG"
@@ -108,13 +111,15 @@ type LogItem struct {
 //             "class": "@pgo/FileTarget",
 //             "levels": "DEBUG,INFO,NOTICE",
 //             "filePath": "@runtime/info.log",
-//             "maxLogFile": 10
+//             "maxLogFile": 10,
+//             "rotate": "daily"
 //         },
 //         "error": {
 //             "class": "@pgo/FileTarget",
 //             "levels": "WARN,ERROR,FATAL",
 //             "filePath": "@runtime/error.log",
-//             "maxLogFile": 10
+//             "maxLogFile": 10,
+//             "rotate": "daily"
 //         }
 //     }
 // }
@@ -149,7 +154,7 @@ func (d *Dispatcher) Init() {
     go d.loop()
 }
 
-// set log levels to handle, default all
+// SetLevels set levels to handle, default "ALL"
 func (d *Dispatcher) SetLevels(v interface{}) {
     if _, ok := v.(string); ok {
         d.levels = parseLevels(v.(string))
@@ -160,12 +165,12 @@ func (d *Dispatcher) SetLevels(v interface{}) {
     }
 }
 
-// set length of log channel, default 1000
+// SetChanLen set length of log channel, default 1000
 func (d *Dispatcher) SetChanLen(len int) {
     d.chanLen = len
 }
 
-// set log levels to trace, default debug
+// SetTraceLevels set levels to trace, default "DEBUG"
 func (d *Dispatcher) SetTraceLevels(v interface{}) {
     if _, ok := v.(string); ok {
         d.traceLevels = parseLevels(v.(string))
@@ -176,7 +181,7 @@ func (d *Dispatcher) SetTraceLevels(v interface{}) {
     }
 }
 
-// set interval to flush log, default 60s
+// SetFlushInterval set interval to flush log, default "60s"
 func (d *Dispatcher) SetFlushInterval(v string) {
     if flushInterval, err := time.ParseDuration(v); err != nil {
         panic(fmt.Sprintf("Dispatcher: parse flushInterval error, val:%s, err:%s", v, err.Error()))
@@ -185,7 +190,7 @@ func (d *Dispatcher) SetFlushInterval(v string) {
     }
 }
 
-// set output target, default ConsoleTarget
+// SetTargets set output target, ConsoleTarget will be used if no targets specified
 func (d *Dispatcher) SetTargets(targets map[string]interface{}) {
     d.targets = make(map[string]ITarget)
 
@@ -200,17 +205,17 @@ func (d *Dispatcher) SetTargets(targets map[string]interface{}) {
     }
 }
 
-// get a new logger with name and logId specified
+// GetLogger get a new logger with name and id specified
 func (d *Dispatcher) GetLogger(name, logId string) *Logger {
     return &Logger{name, logId, d}
 }
 
-// get a new profiler
+// GetProfiler get a new profiler
 func (d *Dispatcher) GetProfiler() *Profiler {
     return &Profiler{}
 }
 
-// close msg chan and wait loop end
+// Flush close msg chan and wait loop end
 func (d *Dispatcher) Flush() {
     close(d.msgChan)
     d.wg.Wait()
@@ -262,7 +267,7 @@ end:
     d.wg.Done()
 }
 
-// logger component
+// Logger
 type Logger struct {
     name       string
     logId      string
@@ -290,10 +295,12 @@ func (l *Logger) log(level int, format string, v ...interface{}) {
     l.dispatcher.addItem(item)
 }
 
+// GetName get name of logger
 func (l *Logger) GetName() string {
     return l.name
 }
 
+// GetLogId get id of logger
 func (l *Logger) GetLogId() string {
     return l.logId
 }
@@ -322,7 +329,7 @@ func (l *Logger) Fatal(format string, v ...interface{}) {
     l.log(LevelFatal, format, v...)
 }
 
-// profiler component
+// Profiler
 type Profiler struct {
     pushLog      []string
     counting     map[string][2]int
@@ -337,6 +344,7 @@ func (p *Profiler) Reset() {
     p.profileStack = nil
 }
 
+// PushLog add push log, the push log string is key=Util.ToString(v)
 func (p *Profiler) PushLog(key string, v interface{}) {
     if p.pushLog == nil {
         p.pushLog = make([]string, 0)
@@ -346,6 +354,7 @@ func (p *Profiler) PushLog(key string, v interface{}) {
     p.pushLog = append(p.pushLog, pl)
 }
 
+// Counting add counting info, the counting string is key=sum(hit)/sum(total)
 func (p *Profiler) Counting(key string, hit, total int) {
     if p.counting == nil {
         p.counting = make(map[string][2]int)
@@ -365,6 +374,7 @@ func (p *Profiler) Counting(key string, hit, total int) {
     p.counting[key] = v
 }
 
+// ProfileStart mark start of profile
 func (p *Profiler) ProfileStart(key string) {
     if p.profileStack == nil {
         p.profileStack = make(map[string]time.Time)
@@ -373,6 +383,7 @@ func (p *Profiler) ProfileStart(key string) {
     p.profileStack[key] = time.Now()
 }
 
+// ProfileStop mark stop of profile
 func (p *Profiler) ProfileStop(key string) {
     if startTime, ok := p.profileStack[key]; ok {
         delete(p.profileStack, key)
@@ -380,6 +391,7 @@ func (p *Profiler) ProfileStop(key string) {
     }
 }
 
+// ProfileAdd add profile info, the profile string is key=sum(elapse)/count
 func (p *Profiler) ProfileAdd(key string, elapse time.Duration) {
     if p.profile == nil {
         p.profile = make(map[string][2]int)
@@ -392,6 +404,7 @@ func (p *Profiler) ProfileAdd(key string, elapse time.Duration) {
     p.profile[key] = v
 }
 
+// GetPushLogString get push log string
 func (p *Profiler) GetPushLogString() string {
     if len(p.pushLog) == 0 {
         return ""
@@ -400,6 +413,7 @@ func (p *Profiler) GetPushLogString() string {
     return strings.Join(p.pushLog, " ")
 }
 
+// GetCountingString get counting info string
 func (p *Profiler) GetCountingString() string {
     if len(p.counting) == 0 {
         return ""
@@ -413,6 +427,7 @@ func (p *Profiler) GetCountingString() string {
     return strings.Join(cs, " ")
 }
 
+// GetProfileString get profile info string
 func (p *Profiler) GetProfileString() string {
     if len(p.profile) == 0 {
         return ""
@@ -426,13 +441,13 @@ func (p *Profiler) GetProfileString() string {
     return strings.Join(ps, " ")
 }
 
-// base class of output target
+// Target base class of output
 type Target struct {
     levels    int
     formatter IFormatter
 }
 
-// set log levels for target, eg. DEBUG,INFO,NOTICE
+// SetLevels set levels for target, eg. "DEBUG,INFO,NOTICE"
 func (t *Target) SetLevels(v interface{}) {
     if _, ok := v.(string); ok {
         t.levels = parseLevels(v.(string))
@@ -443,7 +458,7 @@ func (t *Target) SetLevels(v interface{}) {
     }
 }
 
-// set user-defined log formatter, eg. "Lib/Log/Formatter"
+// SetFormatter set user-defined log formatter, eg. "Lib/Log/Formatter"
 func (t *Target) SetFormatter(v interface{}) {
     if ptr, ok := v.(IFormatter); ok {
         t.formatter = ptr
@@ -456,16 +471,19 @@ func (t *Target) SetFormatter(v interface{}) {
     }
 }
 
+// IsHandling check whether this target is handling the log item
 func (t *Target) IsHandling(level int) bool {
     return t.levels&level != 0
 }
 
+// Format format log item to string
 func (t *Target) Format(item *LogItem) string {
+    // call user-defined formatter if exists
     if t.formatter != nil {
         return t.formatter.Format(item)
     }
 
-    // [time][logId][name][level][trace]: message\n
+    // default log format: [time][logId][name][level][trace]: message\n
     return fmt.Sprintf("[%s][%s][%s][%s]%s: %s\n",
         item.When.Format("2006/01/02 15:04:05.000"),
         item.LogId,
@@ -476,7 +494,7 @@ func (t *Target) Format(item *LogItem) string {
     )
 }
 
-// console output target
+// ConsoleTarget target for console
 type ConsoleTarget struct {
     Target
 }
@@ -485,6 +503,7 @@ func (c *ConsoleTarget) Construct() {
     c.levels = LevelAll
 }
 
+// Process write log to stdout
 func (c *ConsoleTarget) Process(item *LogItem) {
     if !c.IsHandling(item.Level) {
         return
@@ -493,11 +512,12 @@ func (c *ConsoleTarget) Process(item *LogItem) {
     os.Stdout.WriteString(c.Format(item))
 }
 
+// Flush flush log to stdout
 func (c *ConsoleTarget) Flush(final bool) {
     os.Stdout.Sync()
 }
 
-// file output target, configuration:
+// FileTarget target for file, configuration:
 // "info": {
 //     "class": "@pgo/FileTarget",
 //     "levels": "DEBUG,INFO,NOTICE",
@@ -548,27 +568,27 @@ func (f *FileTarget) Init() {
     f.buffer.Grow(f.maxBufferByte)
 }
 
-// set file path or path alias, default @runtime/app.log
+// SetFilePath set file path, default "@runtime/app.log"
 func (f *FileTarget) SetFilePath(filePath string) {
     f.filePath = filePath
 }
 
-// set max log files backup in fs, default 10
+// SetMaxLogFile set max log backups, default 10
 func (f *FileTarget) SetMaxLogFile(maxLogFile int) {
     f.maxLogFile = maxLogFile
 }
 
-// set max log bytes hold in buffer, default 10MB
+// SetMaxBufferByte set max buffer bytes, default 10MB
 func (f *FileTarget) SetMaxBufferByte(maxBufferByte int) {
     f.maxBufferByte = maxBufferByte
 }
 
-// set max log lines hold in buffer, default 10000
+// SetMaxBufferLine set max buffer lines, default 10000
 func (f *FileTarget) SetMaxBufferLine(maxBufferLine int) {
     f.maxBufferLine = maxBufferLine
 }
 
-// set rotate policy(none, hourly, daily), default daily
+// SetRotate set rotate policy(none, hourly, daily), default "daily"
 func (f *FileTarget) SetRotate(rotate string) {
     switch strings.ToUpper(rotate) {
     case "NONE":
@@ -582,6 +602,8 @@ func (f *FileTarget) SetRotate(rotate string) {
     }
 }
 
+// Process check and rotate log file if rotate is enable,
+// write log to buffer, flush buffer to file if buffer is full.
 func (f *FileTarget) Process(item *LogItem) {
     if !f.IsHandling(item.Level) {
         return
@@ -602,6 +624,7 @@ func (f *FileTarget) Process(item *LogItem) {
     }
 }
 
+// Flush flush log buffer to file
 func (f *FileTarget) Flush(final bool) {
     // nothing to flush
     if f.curBufferLine == 0 {

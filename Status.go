@@ -7,7 +7,7 @@ import (
     "github.com/pinguo/pgo/Util"
 )
 
-// status component, configuration:
+// Status the status component, configuration:
 // "status": {
 //     "useI18n": false,
 //     "mapping": {
@@ -24,16 +24,19 @@ func (s *Status) Construct() {
     s.mapping = make(map[int]string)
 }
 
+// SetUseI18n set whether to use i18n translation
 func (s *Status) SetUseI18n(useI18n bool) {
     s.useI18n = useI18n
 }
 
+// SetMapping set mapping from status code to text
 func (s *Status) SetMapping(m map[string]interface{}) {
     for k, v := range m {
         s.mapping[Util.ToInt(k)] = Util.ToString(v)
     }
 }
 
+// GetText get status text
 func (s *Status) GetText(status int, ctx *Context, dft ...string) string {
     txt, ok := s.mapping[status]
     if !ok {

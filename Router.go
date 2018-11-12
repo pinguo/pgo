@@ -23,7 +23,7 @@ type routeRule struct {
     route   string
 }
 
-// router component, configuration:
+// Router the router component, configuration:
 // "router": {
 //     "rules": [
 //         "^/foo/all$ => /foo/index",
@@ -40,7 +40,7 @@ func (r *Router) Construct() {
     r.rules = make([]routeRule, 0, 10)
 }
 
-// config rules, format: `^/api/user/(\d+)$ => /api/user`
+// SetRules set rule list, format: `^/api/user/(\d+)$ => /api/user`
 func (r *Router) SetRules(rules []interface{}) {
     for _, v := range rules {
         parts := strings.Split(v.(string), "=>")
@@ -54,7 +54,7 @@ func (r *Router) SetRules(rules []interface{}) {
     }
 }
 
-// add one route, the captured group will be passed to
+// AddRoute add one route, the captured group will be passed to
 // action method as function params
 func (r *Router) AddRoute(pattern, route string) {
     rePat := regexp.MustCompile(pattern)
@@ -62,7 +62,7 @@ func (r *Router) AddRoute(pattern, route string) {
     r.rules = append(r.rules, rule)
 }
 
-// resolve path to route and action params, then format route to CamelCase
+// Resolve path to route and action params, then format route to CamelCase
 func (r *Router) Resolve(path string) (route string, params []string) {
     path = Util.CleanPath(path)
 

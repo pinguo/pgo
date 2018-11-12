@@ -14,11 +14,13 @@ func NewValue(data interface{}) *Value {
     return &Value{data}
 }
 
+// Encode encode data to bytes
 func Encode(data interface{}) []byte {
     v := Value{data}
     return v.Encode()
 }
 
+// Decode data bytes to ptr
 func Decode(data interface{}, ptr interface{}) {
     v := Value{data}
     v.Decode(ptr)
@@ -30,10 +32,12 @@ type Value struct {
     data interface{}
 }
 
+// Valid check the underlying data is nil
 func (v *Value) Valid() bool {
     return v.data != nil
 }
 
+// TryEncode try encode data, err is not nil if panic
 func (v *Value) TryEncode() (output []byte, err error) {
     defer func() {
         if v := recover(); v != nil {
@@ -43,6 +47,7 @@ func (v *Value) TryEncode() (output []byte, err error) {
     return v.Encode(), nil
 }
 
+// TryDecode try decode data, err is not nil if panic
 func (v *Value) TryDecode(ptr interface{}) (err error) {
     defer func() {
         if v := recover(); v != nil {
@@ -53,6 +58,7 @@ func (v *Value) TryDecode(ptr interface{}) (err error) {
     return nil
 }
 
+// Encode encode data to bytes, panic if failed
 func (v *Value) Encode() []byte {
     var output []byte
     switch d := v.data.(type) {
@@ -81,6 +87,7 @@ func (v *Value) Encode() []byte {
     return output
 }
 
+// Decode decode data bytes to ptr, panic if failed
 func (v *Value) Decode(ptr interface{}) {
     switch p := ptr.(type) {
     case *[]byte:
@@ -117,22 +124,27 @@ func (v *Value) Decode(ptr interface{}) {
     }
 }
 
+// Data return underlying data
 func (v *Value) Data() interface{} {
     return v.data
 }
 
+// Bool return underlying data as bool
 func (v *Value) Bool() bool {
     return Util.ToBool(v.data)
 }
 
+// Int return underlying data as int
 func (v *Value) Int() int {
     return Util.ToInt(v.data)
 }
 
+// Float return underlying data as float64
 func (v *Value) Float() float64 {
     return Util.ToFloat(v.data)
 }
 
+// String return underlying data as string
 func (v *Value) String() string {
     switch d := v.data.(type) {
     case []byte:
@@ -147,6 +159,7 @@ func (v *Value) String() string {
     }
 }
 
+// Bytes return underlying data as bytes
 func (v *Value) Bytes() []byte {
     switch d := v.data.(type) {
     case []byte:

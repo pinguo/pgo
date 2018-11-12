@@ -71,7 +71,7 @@ func GLogger() *Logger {
     return logger
 }
 
-// StartDuration time duration since app starts
+// StartDuration time duration since app start
 func StartDuration() time.Duration {
     return time.Since(startTime)
 }

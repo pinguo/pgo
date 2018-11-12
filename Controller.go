@@ -10,14 +10,14 @@ import (
     "github.com/pinguo/pgo/Util"
 )
 
-// base class of controller and command
+// Controller the base class of web and cmd controller
 type Controller struct {
     Object
     Status int    // response status
     Output []byte // response output
 }
 
-// get action map as extra binding info
+// GetBindInfo get action map as extra binding info
 func (c *Controller) GetBindInfo(v interface{}) interface{} {
     if _, ok := v.(IController); !ok {
         panic("param require a controller")
@@ -37,15 +37,15 @@ func (c *Controller) GetBindInfo(v interface{}) interface{} {
     return actions
 }
 
-// before action hook
+// BeforeAction before action hook
 func (c *Controller) BeforeAction(action string) {
 }
 
-// after action hook
+// AfterAction after action hook
 func (c *Controller) AfterAction(action string) {
 }
 
-// finish action hook
+// FinishAction finish action hook
 func (c *Controller) FinishAction(action string) {
     ctx := c.GetContext()
 
@@ -66,7 +66,7 @@ func (c *Controller) FinishAction(action string) {
     }
 }
 
-// process unhandled action panic
+// HandlePanic process unhandled action panic
 func (c *Controller) HandlePanic(v interface{}) {
     status := http.StatusInternalServerError
     switch e := v.(type) {
@@ -82,7 +82,7 @@ func (c *Controller) HandlePanic(v interface{}) {
     }
 }
 
-// redirect response
+// Redirect output redirect response
 func (c *Controller) Redirect(location string, permanent bool) {
     if permanent {
         c.Status = http.StatusMovedPermanently
@@ -93,7 +93,7 @@ func (c *Controller) Redirect(location string, permanent bool) {
     c.GetContext().SetHeader("Location", location)
 }
 
-// output json response
+// OutputJson output json response
 func (c *Controller) OutputJson(data interface{}, status int, msg ...string) {
     message := App.GetStatus().GetText(status, c.GetContext(), msg...)
     output, e := json.Marshal(map[string]interface{}{
@@ -113,7 +113,7 @@ func (c *Controller) OutputJson(data interface{}, status int, msg ...string) {
     c.GetContext().SetHeader("Content-Type", "application/json; charset=utf-8")
 }
 
-// output jsonp response
+// OutputJsonp output jsonp response
 func (c *Controller) OutputJsonp(callback string, data interface{}, status int, msg ...string) {
     message := App.GetStatus().GetText(status, c.GetContext(), msg...)
     output, e := json.Marshal(map[string]interface{}{
@@ -138,7 +138,7 @@ func (c *Controller) OutputJsonp(callback string, data interface{}, status int, 
     c.GetContext().SetHeader("Content-Type", "text/javascript; charset=utf-8")
 }
 
-// output rendered view
+// OutputView output rendered view
 func (c *Controller) OutputView(view string, data interface{}) {
     c.Status = http.StatusOK
     c.Output = App.GetView().Render(view, data)

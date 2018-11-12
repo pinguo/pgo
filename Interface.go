@@ -23,10 +23,6 @@ type IPlugin interface {
     HandleRequest(ctx *Context)
 }
 
-type IFilter interface {
-    HandleFilter(ctx *Context)
-}
-
 type IFormatter interface {
     Format(item *LogItem) string
 }
