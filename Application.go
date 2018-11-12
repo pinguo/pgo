@@ -236,30 +236,20 @@ func (app *Application) GetView() *View {
 // Get get component by id
 func (app *Application) Get(id string) interface{} {
     if _, ok := app.components[id]; !ok {
-        app.loadComponent(id)
-    }
+        app.lock.Lock()
+        defer app.lock.Unlock()
 
-    app.lock.RLock()
-    defer app.lock.RUnlock()
+        // avoid repeated loading
+        if _, ok := app.components[id]; !ok {
+            if conf := app.config.Get("app.components." + id); conf == nil {
+                panic("component not found: " + id)
+            } else {
+                app.components[id] = CreateObject(conf)
+            }
+        }
+    }
 
     return app.components[id]
-}
-
-func (app *Application) loadComponent(id string) {
-    app.lock.Lock()
-    defer app.lock.Unlock()
-
-    // avoid repeated loading
-    if _, ok := app.components[id]; ok {
-        return
-    }
-
-    conf := app.config.Get("app.components." + id)
-    if conf == nil {
-        panic("component not found: " + id)
-    }
-
-    app.components[id] = CreateObject(conf)
 }
 
 func (app *Application) coreComponents() map[string]string {
