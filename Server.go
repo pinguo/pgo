@@ -5,6 +5,7 @@ import (
     "encoding/json"
     "fmt"
     "net/http"
+    _ "net/http/pprof"
     "os"
     "os/signal"
     "path/filepath"
@@ -24,7 +25,7 @@ import (
 //     "httpAddr": "0.0.0.0:8000",
 //     "debugAddr": "0.0.0.0:8100",
 //     "httpsAddr": "0.0.0.0:8443",
-//     "certFile": "@app/conf/server.crt",
+//     "crtFile": "@app/conf/server.crt",
 //     "keyFile": "@app/conf/server.key",
 //     "readTimeout": "30s",
 //     "writeTimeout": "30s",
@@ -35,9 +36,9 @@ import (
 type Server struct {
     httpAddr  string // address for http
     httpsAddr string // address for https
-    debugAddr string // address for stats and pprof
+    debugAddr string // address for pprof
 
-    certFile       string // https certificate file
+    crtFile        string // https certificate file
     keyFile        string // https private key file
     readTimeout    time.Duration
     writeTimeout   time.Duration
@@ -83,6 +84,16 @@ func (s *Server) SetDebugAddr(addr string) {
     s.debugAddr = addr
 }
 
+// SetCrtFile set certificate file for https
+func (s *Server) SetCrtFile(certFile string) {
+    s.crtFile, _ = filepath.Abs(GetAlias(certFile))
+}
+
+// SetKeyFile set private key file for https
+func (s *Server) SetKeyFile(keyFile string) {
+    s.keyFile, _ = filepath.Abs(GetAlias(keyFile))
+}
+
 // SetReadTimeout set timeout to read request
 func (s *Server) SetReadTimeout(v string) {
     if timeout, err := time.ParseDuration(v); err != nil {
@@ -104,16 +115,6 @@ func (s *Server) SetWriteTimeout(v string) {
 // SetMaxHeaderBytes set max header bytes for http
 func (s *Server) SetMaxHeaderBytes(maxBytes int) {
     s.maxHeaderBytes = maxBytes
-}
-
-// SetCertFile set certificate file for https
-func (s *Server) SetCertFile(certFile string) {
-    s.certFile, _ = filepath.Abs(GetAlias(certFile))
-}
-
-// SetKeyFile set private key file for https
-func (s *Server) SetKeyFile(keyFile string) {
-    s.keyFile, _ = filepath.Abs(GetAlias(keyFile))
 }
 
 func (s *Server) SetErrorLogOff(codes []interface{}) {
@@ -242,8 +243,8 @@ func (s *Server) handleHttp(wg *sync.WaitGroup) {
 func (s *Server) handleHttps(wg *sync.WaitGroup) {
     if s.httpsAddr == "" {
         return
-    } else if s.certFile == "" || s.keyFile == "" {
-        panic("https no certFile or keyFile configured")
+    } else if s.crtFile == "" || s.keyFile == "" {
+        panic("https no crtFile or keyFile configured")
     }
 
     svr := s.newHttpServer(s.httpsAddr)
@@ -253,7 +254,7 @@ func (s *Server) handleHttps(wg *sync.WaitGroup) {
     GLogger().Info("start running https at " + svr.Addr)
 
     go func() {
-        if err := svr.ListenAndServeTLS(s.certFile, s.keyFile); err != http.ErrServerClosed {
+        if err := svr.ListenAndServeTLS(s.crtFile, s.keyFile); err != http.ErrServerClosed {
             panic("ListenAndServeTLS failed, " + err.Error())
         }
     }()
