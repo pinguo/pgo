@@ -111,8 +111,8 @@ func (s *Server) SetCertFile(certFile string) {
     s.certFile, _ = filepath.Abs(GetAlias(certFile))
 }
 
-// SerKeyFile set private key file for https
-func (s *Server) SerKeyFile(keyFile string) {
+// SetKeyFile set private key file for https
+func (s *Server) SetKeyFile(keyFile string) {
     s.keyFile, _ = filepath.Abs(GetAlias(keyFile))
 }
 

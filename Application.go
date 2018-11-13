@@ -83,6 +83,12 @@ func (app *Application) Init() {
         app.basePath, _ = filepath.Abs(*base)
     }
 
+    // set basic path alias
+    type dummy struct{}
+    pkgPath := reflect.TypeOf(dummy{}).PkgPath()
+    SetAlias("@app", app.basePath)
+    SetAlias("@pgo", strings.TrimPrefix(pkgPath, VendorPrefix))
+
     // initialize config object
     ConstructAndInit(app.config, nil)
 
@@ -92,12 +98,6 @@ func (app *Application) Init() {
     // initialize server object
     svrConf, _ := app.config.Get("app.server").(map[string]interface{})
     ConstructAndInit(app.server, svrConf)
-
-    // set basic path alias
-    type dummy struct{}
-    pkgPath := reflect.TypeOf(dummy{}).PkgPath()
-    SetAlias("@app", app.basePath)
-    SetAlias("@pgo", strings.TrimPrefix(pkgPath, VendorPrefix))
 
     // overwrite app name
     if name := app.config.GetString("app.name", ""); len(name) > 0 {
