@@ -19,16 +19,6 @@ import (
     "github.com/pinguo/pgo/Util"
 )
 
-// ServerStats server stats
-type ServerStats struct {
-    TotalReq uint64
-    MemMB    uint
-    NumGO    uint
-    NumGC    uint
-    TimeGC   string
-    TimeRun  string
-}
-
 // Server the server component, configuration:
 // "server": {
 //     "httpAddr": "0.0.0.0:8000",
@@ -144,6 +134,16 @@ func (s *Server) SetStatsInterval(v string) {
 
 func (s *Server) IsErrorLogOff(status int) bool {
     return s.errorLogOff[status]
+}
+
+// ServerStats server stats
+type ServerStats struct {
+    TotalReq uint64 // total request handled
+    MemMB    uint   // memory app used in MB
+    NumGO    uint   // number of goroutines
+    NumGC    uint   // number of gc runs
+    TimeGC   string // total time of gc pause
+    TimeRun  string // total time of app runs
 }
 
 // GetStats get server stats
