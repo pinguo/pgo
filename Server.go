@@ -169,7 +169,7 @@ func (s *Server) GetStats() *ServerStats {
     }
 }
 
-// Serve entry of request processing
+// Serve request processing entry
 func (s *Server) Serve() {
     // flush log when app end
     defer App.GetLog().Flush()
