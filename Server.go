@@ -2,7 +2,8 @@ package pgo
 
 import (
     "context"
-    "flag"
+    "encoding/json"
+    "fmt"
     "net/http"
     "os"
     "os/signal"
@@ -18,20 +19,41 @@ import (
     "github.com/pinguo/pgo/Util"
 )
 
+// ServerStats server stats
+type ServerStats struct {
+    TotalReq uint64
+    MemMB    uint
+    NumGO    uint
+    NumGC    uint
+    TimeGC   string
+    TimeRun  string
+}
+
 // Server the server component, configuration:
 // "server": {
-//     "addr": "0.0.0.0:8000",
+//     "httpAddr": "0.0.0.0:8000",
+//     "debugAddr": "0.0.0.0:8100",
+//     "httpsAddr": "0.0.0.0:8443",
+//     "certFile": "@app/conf/server.crt",
+//     "keyFile": "@app/conf/server.key",
 //     "readTimeout": "30s",
 //     "writeTimeout": "30s",
 //     "maxHeaderBytes": 1024000,
-//     "fileEnable": true,
-//     "gzipEnable": true,
-//     "gzipMinBytes": 1024,
 //     "statsInterval": "60s",
 //     "errorLogOff": [404]
 // }
 type Server struct {
-    http *http.Server
+    httpAddr  string // address for http
+    httpsAddr string // address for https
+    debugAddr string // address for stats and pprof
+
+    certFile       string // https certificate file
+    keyFile        string // https private key file
+    readTimeout    time.Duration
+    writeTimeout   time.Duration
+    maxHeaderBytes int
+
+    plugins []IPlugin
 
     FileEnable   bool // static file in public path enabled
     GzipEnable   bool // gzip output compress enabled
@@ -41,17 +63,13 @@ type Server struct {
     errorLogOff   map[int]bool  // close error log for specific code
 
     totalReq uint64 // total requests since server start
-    numReq   uint64 // num requests since last stats output
+    servers  []*http.Server
 }
 
 func (s *Server) Construct() {
-    s.http = &http.Server{
-        Addr:           DefaultServerAddr,
-        ReadTimeout:    DefaultTimeout,
-        WriteTimeout:   DefaultTimeout,
-        MaxHeaderBytes: DefaultHeaderBytes,
-        Handler:        s,
-    }
+    s.readTimeout = DefaultTimeout
+    s.writeTimeout = DefaultTimeout
+    s.maxHeaderBytes = DefaultHeaderBytes
 
     s.FileEnable = true
     s.GzipEnable = true
@@ -60,20 +78,52 @@ func (s *Server) Construct() {
     s.statsInterval = 60 * time.Second
 }
 
-func (s *Server) SetAddr(addr string) {
-    s.http.Addr = addr
+// SetHttpAddr set http addr, default "0.0.0.0:8000"
+func (s *Server) SetHttpAddr(addr string) {
+    s.httpAddr = addr
 }
 
-func (s *Server) SetReadTimeout(timeout string) {
-    s.http.ReadTimeout, _ = time.ParseDuration(timeout)
+// SetHttpsAddr set https addr, default ""
+func (s *Server) SetHttpsAddr(addr string) {
+    s.httpsAddr = addr
 }
 
-func (s *Server) SetWriteTimeout(timeout string) {
-    s.http.WriteTimeout, _ = time.ParseDuration(timeout)
+// SetDebugAddr set debug and pprof addr, default ""
+func (s *Server) SetDebugAddr(addr string) {
+    s.debugAddr = addr
 }
 
+// SetReadTimeout set timeout to read request
+func (s *Server) SetReadTimeout(v string) {
+    if timeout, err := time.ParseDuration(v); err != nil {
+        panic(fmt.Sprintf("Server: SetReadTimeout failed, val:%s, err:%s", v, err.Error()))
+    } else {
+        s.readTimeout = timeout
+    }
+}
+
+// SetWriteTimeout set timeout to write response
+func (s *Server) SetWriteTimeout(v string) {
+    if timeout, err := time.ParseDuration(v); err != nil {
+        panic(fmt.Sprintf("Server: SetWriteTimeout failed, val:%s, err:%s", v, err.Error()))
+    } else {
+        s.writeTimeout = timeout
+    }
+}
+
+// SetMaxHeaderBytes set max header bytes for http
 func (s *Server) SetMaxHeaderBytes(maxBytes int) {
-    s.http.MaxHeaderBytes = maxBytes
+    s.maxHeaderBytes = maxBytes
+}
+
+// SetCertFile set certificate file for https
+func (s *Server) SetCertFile(certFile string) {
+    s.certFile, _ = filepath.Abs(GetAlias(certFile))
+}
+
+// SerKeyFile set private key file for https
+func (s *Server) SerKeyFile(keyFile string) {
+    s.keyFile, _ = filepath.Abs(GetAlias(keyFile))
 }
 
 func (s *Server) SetErrorLogOff(codes []interface{}) {
@@ -83,71 +133,77 @@ func (s *Server) SetErrorLogOff(codes []interface{}) {
     }
 }
 
-func (s *Server) SetStatsInterval(interval string) {
-    s.statsInterval, _ = time.ParseDuration(interval)
+// SetStatsInterval set interval to output stats
+func (s *Server) SetStatsInterval(v string) {
+    if interval, err := time.ParseDuration(v); err != nil {
+        panic(fmt.Sprintf("Server: SetStatsInterval failed, val:%s, err:%s", v, err.Error()))
+    } else {
+        s.statsInterval = interval
+    }
 }
 
 func (s *Server) IsErrorLogOff(status int) bool {
     return s.errorLogOff[status]
 }
 
-func (s *Server) GetHttp() *http.Server {
-    return s.http
-}
+// GetStats get server stats
+func (s *Server) GetStats() *ServerStats {
+    memStats := runtime.MemStats{}
+    runtime.ReadMemStats(&memStats)
 
-func (s *Server) Serve() {
-    enableDebugServer := App.GetConfig().GetBool("params.debugServer.enable", false)
-    defer func() {
-        if v := recover(); v != nil {
-            GLogger().Fatal("%s trace[%s]", Util.ToString(v), Util.PanicTrace(TraceMaxDepth, false))
-        }
-        if enableDebugServer == true {
-            dAddr := App.GetConfig().GetString("params.debugServer.addr", "0.0.0.0:8100")
-            GLogger().Info("stop running debug http at %s", dAddr)
-        }
-        if App.GetMode() == ModeCmd {
-            GLogger().Info("stop running command %s", flag.Lookup("cmd").Value)
-        } else {
-            GLogger().Info("stop running http at %s", s.http.Addr)
-        }
-
-        App.GetLog().Flush()
-    }()
-    // debug pprof
-    if enableDebugServer == true {
-        go func() {
-            dAddr := App.GetConfig().GetString("params.debugServer.addr", "0.0.0.0:8100")
-            GLogger().Info("start running debug http at %s", dAddr)
-            ds := &http.Server{
-                Addr:         dAddr,
-                ReadTimeout:  40 * time.Second,
-                WriteTimeout: 40 * time.Second,
-            }
-            ds.ListenAndServe()
-        }()
-    }
-
-    if App.GetMode() == ModeCmd {
-        GLogger().Info("start running command %s", flag.Lookup("cmd").Value)
-        s.ServeCMD()
+    timeGC := time.Duration(memStats.PauseTotalNs)
+    if timeGC > time.Minute {
+        timeGC -= timeGC % time.Second
     } else {
-        GLogger().Info("start running http at %s", s.http.Addr)
-        wg := sync.WaitGroup{}
-        wg.Add(1)
+        timeGC -= timeGC % time.Millisecond
+    }
 
-        // new goroutine to handle signal and statistics
-        go s.handleSigAndStats(&wg)
-
-        if e := s.http.ListenAndServe(); e != http.ErrServerClosed {
-            GLogger().Fatal("ListenAndServe failed, %s", e)
-        } else {
-            wg.Wait() // wait completion of shutdown
-        }
+    return &ServerStats{
+        TotalReq: atomic.LoadUint64(&s.totalReq),
+        MemMB:    uint(memStats.Sys / (1 << 20)),
+        NumGO:    uint(runtime.NumGoroutine()),
+        NumGC:    uint(memStats.NumGC),
+        TimeGC:   timeGC.String(),
+        TimeRun:  TimeRun().String(),
     }
 }
 
+// Serve entry of request processing
+func (s *Server) Serve() {
+    // flush log when app end
+    defer App.GetLog().Flush()
+
+    // process command request
+    if App.GetMode() == ModeCmd {
+        s.ServeCMD()
+        return
+    }
+
+    // process http request
+    if s.httpAddr == "" && s.httpsAddr == "" {
+        s.httpAddr = DefaultHttpAddr
+    }
+
+    wg := sync.WaitGroup{}
+    s.handleHttp(&wg)
+    s.handleHttps(&wg)
+    s.handleDebug(&wg)
+    s.handleSignal(&wg)
+    s.handleStats(&wg)
+    wg.Wait()
+}
+
+// ServeCMD serve command request
+func (s *Server) ServeCMD() {
+    ctx := &Context{}
+    ctx.Init()
+
+    s.handleRequest(ctx)
+}
+
+// ServeHTTP serve http request
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    atomic.AddUint64(&s.numReq, 1)
+    atomic.AddUint64(&s.totalReq, 1)
 
     if s.FileEnable {
         // process static file
@@ -165,44 +221,108 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     s.handleRequest(ctx)
 }
 
-func (s *Server) ServeCMD() {
-    ctx := &Context{}
-    ctx.Init()
-
-    s.handleRequest(ctx)
-}
-
-// goroutine to handle signal and statistics
-func (s *Server) handleSigAndStats(wg *sync.WaitGroup) {
-    sig := make(chan os.Signal)
-    signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-    timer := time.Tick(s.statsInterval)
-
-    for {
-        select {
-        case <-sig:
-            ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-            s.http.Shutdown(ctx)
-            goto end
-        case <-timer:
-            memStats := runtime.MemStats{}
-            runtime.ReadMemStats(&memStats)
-
-            numReq := atomic.SwapUint64(&s.numReq, 0)
-            s.totalReq += numReq
-
-            GLogger().Info("app stats, totalReq:%d, lastReq:%d, numGO:%d, sysMem(mb):%d, totalGC(ms):%d, lastGC(ms):%d",
-                s.totalReq, numReq,
-                runtime.NumGoroutine(),
-                memStats.Sys/(1<<20),
-                memStats.PauseTotalNs/1e6,
-                memStats.PauseNs[(memStats.NumGC+255)%256]/1e6,
-            )
-        }
+func (s *Server) handleHttp(wg *sync.WaitGroup) {
+    if s.httpAddr == "" {
+        return
     }
 
-end:
-    wg.Done()
+    svr := s.newHttpServer(s.httpAddr)
+    s.servers = append(s.servers, svr)
+    wg.Add(1)
+
+    GLogger().Info("start running http at " + svr.Addr)
+
+    go func() {
+        if err := svr.ListenAndServe(); err != http.ErrServerClosed {
+            panic("ListenAndServe failed, " + err.Error())
+        }
+    }()
+}
+
+func (s *Server) handleHttps(wg *sync.WaitGroup) {
+    if s.httpsAddr == "" {
+        return
+    } else if s.certFile == "" || s.keyFile == "" {
+        panic("https no certFile or keyFile configured")
+    }
+
+    svr := s.newHttpServer(s.httpsAddr)
+    s.servers = append(s.servers, svr)
+    wg.Add(1)
+
+    GLogger().Info("start running https at " + svr.Addr)
+
+    go func() {
+        if err := svr.ListenAndServeTLS(s.certFile, s.keyFile); err != http.ErrServerClosed {
+            panic("ListenAndServeTLS failed, " + err.Error())
+        }
+    }()
+}
+
+func (s *Server) handleDebug(wg *sync.WaitGroup) {
+    if s.debugAddr == "" {
+        return
+    }
+
+    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("OK"))
+    })
+
+    http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "application/json")
+        data, _ := json.Marshal(s.GetStats())
+        w.Write(data)
+    })
+
+    svr := s.newHttpServer(s.debugAddr)
+    svr.Handler = nil // use default handler
+    s.servers = append(s.servers, svr)
+    wg.Add(1)
+
+    GLogger().Info("start running debug at " + svr.Addr)
+
+    go func() {
+        if err := svr.ListenAndServe(); err != http.ErrServerClosed {
+            panic("ListenAndServe failed, " + err.Error())
+        }
+    }()
+}
+
+func (s *Server) handleSignal(wg *sync.WaitGroup) {
+    sig := make(chan os.Signal)
+    signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+
+    go func() {
+        <-sig // wait signal
+        for _, svr := range s.servers {
+            GLogger().Info("stop running " + svr.Addr)
+            ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+            svr.Shutdown(ctx)
+            wg.Done()
+        }
+    }()
+}
+
+func (s *Server) handleStats(wg *sync.WaitGroup) {
+    timer := time.Tick(s.statsInterval)
+
+    go func() {
+        for {
+            <-timer // wait timer
+            data, _ := json.Marshal(s.GetStats())
+            GLogger().Info("app stats: " + string(data))
+        }
+    }()
+}
+
+func (s *Server) newHttpServer(addr string) *http.Server {
+    return &http.Server{
+        Addr:           addr,
+        ReadTimeout:    s.readTimeout,
+        WriteTimeout:   s.writeTimeout,
+        MaxHeaderBytes: s.maxHeaderBytes,
+        Handler:        s,
+    }
 }
 
 // handle file in public path, no gzip support

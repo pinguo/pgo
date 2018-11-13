@@ -16,7 +16,7 @@ const (
     DefaultEnv         = "production"
     DefaultController  = "Index"
     DefaultAction      = "Index"
-    DefaultServerAddr  = "0.0.0.0:8000"
+    DefaultHttpAddr    = "0.0.0.0:8000"
     DefaultTimeout     = 30 * time.Second
     DefaultHeaderBytes = 1 << 20
     ControllerWeb      = "Controller"
@@ -32,7 +32,7 @@ const (
 
 var (
     App         = &Application{}
-    startTime   = time.Now()
+    appTime     = time.Now()
     aliasMap    = make(map[string]string)
     aliasRe     = regexp.MustCompile(`^@[^\\/]+`)
     logger      *Logger
@@ -71,9 +71,11 @@ func GLogger() *Logger {
     return logger
 }
 
-// StartDuration time duration since app start
-func StartDuration() time.Duration {
-    return time.Since(startTime)
+// TimeRun time duration since app run
+func TimeRun() time.Duration {
+    d := time.Since(appTime)
+    d -= d % time.Second
+    return d
 }
 
 // SetAlias set path alias, eg. @app => /path/to/base
