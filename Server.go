@@ -16,8 +16,6 @@ import (
     "sync/atomic"
     "syscall"
     "time"
-
-    "github.com/pinguo/pgo/Util"
 )
 
 // Server the server component, configuration:
@@ -25,61 +23,52 @@ import (
 //     "httpAddr": "0.0.0.0:8000",
 //     "debugAddr": "0.0.0.0:8100",
 //     "httpsAddr": "0.0.0.0:8443",
-//     "crtFile": "@app/conf/server.crt",
-//     "keyFile": "@app/conf/server.key",
+//     "crtFile": "@app/conf/site.crt",
+//     "keyFile": "@app/conf/site.key",
+//     "maxHeaderBytes": 1024000,
 //     "readTimeout": "30s",
 //     "writeTimeout": "30s",
-//     "maxHeaderBytes": 1024000,
 //     "statsInterval": "60s",
-//     "errorLogOff": [404]
+//     "enableAccessLog": true
 // }
 type Server struct {
     httpAddr  string // address for http
     httpsAddr string // address for https
     debugAddr string // address for pprof
 
-    crtFile        string // https certificate file
-    keyFile        string // https private key file
-    readTimeout    time.Duration
-    writeTimeout   time.Duration
-    maxHeaderBytes int
+    crtFile         string // https certificate file
+    keyFile         string // https private key file
+    maxHeaderBytes  int
+    readTimeout     time.Duration // timeout for reading request
+    writeTimeout    time.Duration // timeout for writing response
+    statsInterval   time.Duration // interval for output server stats
+    enableAccessLog bool
 
-    plugins []IPlugin
-
-    FileEnable   bool // static file in public path enabled
-    GzipEnable   bool // gzip output compress enabled
-    GzipMinBytes int  // minimum bytes for gzip output
-
-    statsInterval time.Duration // interval for output server stats
-    errorLogOff   map[int]bool  // close error log for specific code
-
-    totalReq uint64 // total requests since server start
-    servers  []*http.Server
+    totalReq uint64         // total requests server handled
+    plugins  []IPlugin      // active server plugin list
+    servers  []*http.Server // active http server list
 }
 
 func (s *Server) Construct() {
+    s.maxHeaderBytes = DefaultHeaderBytes
     s.readTimeout = DefaultTimeout
     s.writeTimeout = DefaultTimeout
-    s.maxHeaderBytes = DefaultHeaderBytes
-
-    s.FileEnable = true
-    s.GzipEnable = true
-    s.GzipMinBytes = 1024
-
     s.statsInterval = 60 * time.Second
+    s.enableAccessLog = true
 }
 
-// SetHttpAddr set http addr, default "0.0.0.0:8000"
+// SetHttpAddr set http addr, if both httpAddr and httpsAddr
+// are empty, "0.0.0.0:8000" will be used as httpAddr.
 func (s *Server) SetHttpAddr(addr string) {
     s.httpAddr = addr
 }
 
-// SetHttpsAddr set https addr, default ""
+// SetHttpsAddr set https addr.
 func (s *Server) SetHttpsAddr(addr string) {
     s.httpsAddr = addr
 }
 
-// SetDebugAddr set debug and pprof addr, default ""
+// SetDebugAddr set debug and pprof addr.
 func (s *Server) SetDebugAddr(addr string) {
     s.debugAddr = addr
 }
@@ -92,6 +81,11 @@ func (s *Server) SetCrtFile(certFile string) {
 // SetKeyFile set private key file for https
 func (s *Server) SetKeyFile(keyFile string) {
     s.keyFile, _ = filepath.Abs(GetAlias(keyFile))
+}
+
+// SetMaxHeaderBytes set max header bytes
+func (s *Server) SetMaxHeaderBytes(maxBytes int) {
+    s.maxHeaderBytes = maxBytes
 }
 
 // SetReadTimeout set timeout to read request
@@ -112,18 +106,6 @@ func (s *Server) SetWriteTimeout(v string) {
     }
 }
 
-// SetMaxHeaderBytes set max header bytes for http
-func (s *Server) SetMaxHeaderBytes(maxBytes int) {
-    s.maxHeaderBytes = maxBytes
-}
-
-func (s *Server) SetErrorLogOff(codes []interface{}) {
-    s.errorLogOff = make(map[int]bool)
-    for _, v := range codes {
-        s.errorLogOff[Util.ToInt(v)] = true
-    }
-}
-
 // SetStatsInterval set interval to output stats
 func (s *Server) SetStatsInterval(v string) {
     if interval, err := time.ParseDuration(v); err != nil {
@@ -133,14 +115,15 @@ func (s *Server) SetStatsInterval(v string) {
     }
 }
 
-func (s *Server) IsErrorLogOff(status int) bool {
-    return s.errorLogOff[status]
+// SetEnableAccessLog set access log enable or not
+func (s *Server) SetEnableAccessLog(v bool) {
+    s.enableAccessLog = v
 }
 
 // ServerStats server stats
 type ServerStats struct {
-    TotalReq uint64 // total request handled
-    MemMB    uint   // memory app used in MB
+    TotalReq uint64 // total handled requests
+    MemMB    uint   // memory obtained from os
     NumGO    uint   // number of goroutines
     NumGC    uint   // number of gc runs
     TimeGC   string // total time of gc pause
@@ -185,6 +168,9 @@ func (s *Server) Serve() {
         s.httpAddr = DefaultHttpAddr
     }
 
+    // initialize plugins
+    s.initPlugins()
+
     wg := sync.WaitGroup{}
     s.handleHttp(&wg)
     s.handleHttps(&wg)
@@ -196,30 +182,70 @@ func (s *Server) Serve() {
 
 // ServeCMD serve command request
 func (s *Server) ServeCMD() {
-    ctx := &Context{}
-    ctx.Init()
+    ctx := Context{enableLog: s.enableAccessLog}
 
-    s.handleRequest(ctx)
+    // only apply the last plugin for command
+    ctx.process(s.plugins[len(s.plugins)-1:])
 }
 
 // ServeHTTP serve http request
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    // increase request count
     atomic.AddUint64(&s.totalReq, 1)
+    ctx := contextPool.Get().(*Context)
 
-    if s.FileEnable {
-        // process static file
-        if ext := filepath.Ext(r.URL.Path); len(ext) > 0 {
-            s.handleFile(w, r)
-            return
-        }
+    ctx.enableLog = s.enableAccessLog
+    ctx.response.reset(w)
+    ctx.input = r
+    ctx.output = &ctx.response
+    ctx.process(s.plugins)
+    contextPool.Put(ctx)
+}
+
+// HandleRequest handle request of cmd or http,
+// this method is in the last of plugin chain.
+func (s *Server) HandleRequest(ctx *Context) {
+    // get request path and resolve route
+    path := ctx.GetPath()
+    route, params := App.GetRouter().Resolve(path)
+
+    // get new controller bind to this route
+    rv, info := s.createController(route, ctx)
+    controller := rv.Interface().(IController)
+
+    // get action method by sequence number
+    actionMap := info.(map[string]int)
+    actionId := ctx.GetActionId()
+    action := rv.Method(actionMap[actionId])
+
+    // fill empty string for missing param
+    numIn := action.Type().NumIn()
+    if len(params) < numIn {
+        fill := make([]string, numIn-len(params))
+        params = append(params, fill...)
     }
 
-    // process http service
-    ctx := &Context{}
-    ctx.SetInput(r)
-    ctx.SetOutput(w)
-    ctx.Init()
-    s.handleRequest(ctx)
+    // prepare params for action call
+    callParams := make([]reflect.Value, 0)
+    for _, param := range params {
+        callParams = append(callParams, reflect.ValueOf(param))
+    }
+
+    defer func() {
+        // process controller panic
+        if v := recover(); v != nil {
+            controller.HandlePanic(v)
+        }
+
+        // after action hook
+        controller.AfterAction(actionId)
+    }()
+
+    // before action hook
+    controller.BeforeAction(actionId)
+
+    // call action method
+    action.Call(callParams)
 }
 
 func (s *Server) handleHttp(wg *sync.WaitGroup) {
@@ -326,78 +352,18 @@ func (s *Server) newHttpServer(addr string) *http.Server {
     }
 }
 
-// handle file in public path, no gzip support
-func (s *Server) handleFile(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodGet && r.Method != http.MethodHead {
-        http.Error(w, "", http.StatusMethodNotAllowed)
-        return
+func (s *Server) initPlugins() {
+    plugins, _ := App.GetConfig().Get("app.server.plugins").([]interface{})
+    for _, id := range plugins {
+        s.plugins = append(s.plugins, App.Get(id.(string)).(IPlugin))
     }
 
-    file := filepath.Join(App.GetPublicPath(), Util.CleanPath(r.URL.Path))
-    h, e := os.Open(file)
-    if e != nil {
-        http.Error(w, "", http.StatusNotFound)
-        return
+    // server is the last plugin
+    s.plugins = append(s.plugins, s)
+
+    if len(s.plugins) > MaxPlugings {
+        panic("Server: too many plugins")
     }
-
-    defer h.Close()
-
-    f, _ := h.Stat()
-    http.ServeContent(w, r, file, f.ModTime(), h)
-}
-
-func (s *Server) handleRequest(ctx *Context) {
-    defer func() {
-        // process unhandled panic
-        if v := recover(); v != nil {
-            s.handlePanic(ctx, v)
-        }
-    }()
-
-    // get request path and resolve route
-    path := ctx.GetPath()
-    route, params := App.GetRouter().Resolve(path)
-
-    // get new controller bind to this route
-    rv, info := s.createController(route, ctx)
-    controller := rv.Interface().(IController)
-
-    // get action method by sequence number
-    actionMap := info.(map[string]int)
-    actionId := ctx.GetActionId()
-    action := rv.Method(actionMap[actionId])
-
-    // fill empty string for missing param
-    numIn := action.Type().NumIn()
-    if len(params) < numIn {
-        fill := make([]string, numIn-len(params))
-        params = append(params, fill...)
-    }
-
-    // prepare params for action call
-    callParams := make([]reflect.Value, 0)
-    for _, param := range params {
-        callParams = append(callParams, reflect.ValueOf(param))
-    }
-
-    defer func() {
-        // process controller panic
-        if v := recover(); v != nil {
-            controller.HandlePanic(v)
-        }
-
-        // send action output
-        controller.FinishAction(actionId)
-    }()
-
-    // before action hook
-    controller.BeforeAction(actionId)
-
-    // call action method
-    action.Call(callParams)
-
-    // after action hook
-    controller.AfterAction(actionId)
 }
 
 func (s *Server) createController(route string, ctx *Context) (reflect.Value, interface{}) {
@@ -416,7 +382,7 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, in
         controllerId = route
         actionId = ""
     } else {
-        panic(NewException(http.StatusNotFound, "route not found, %s", route))
+        panic(NewException(http.StatusNotFound, "route not found"))
     }
 
     rv, info := di.GetValue(s.getControllerName(controllerId), nil)
@@ -424,7 +390,7 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, in
 
     if len(actionId) > 0 {
         if _, ok := actions[actionId]; !ok {
-            panic(NewException(http.StatusNotFound, "route not found, %s", route))
+            panic(NewException(http.StatusNotFound, "route not found"))
         }
     } else {
         if _, ok := actions[DefaultAction]; ok {
@@ -432,7 +398,7 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, in
         } else {
             method := ctx.GetMethod()
             if _, ok := actions[method]; !ok {
-                panic(NewException(http.StatusNotFound, "route not found, %s", route))
+                panic(NewException(http.StatusNotFound, "route not found"))
             }
             actionId = method
         }
@@ -450,20 +416,5 @@ func (s *Server) getControllerName(id string) string {
         return ControllerWeb + id + ControllerWeb
     } else {
         return ControllerCmd + id + ControllerCmd
-    }
-}
-
-func (s *Server) handlePanic(ctx *Context, v interface{}) {
-    status := http.StatusInternalServerError
-    switch e := v.(type) {
-    case *Exception:
-        status = e.GetStatus()
-        ctx.End(status, []byte(App.GetStatus().GetText(status, ctx, e.GetMessage())))
-    default:
-        ctx.End(status, []byte(http.StatusText(status)))
-    }
-
-    if !s.IsErrorLogOff(status) {
-        ctx.Error("%s, trace[%s]", Util.ToString(v), Util.PanicTrace(TraceMaxDepth, false))
     }
 }

@@ -15,7 +15,6 @@ type IObject interface {
 type IController interface {
     BeforeAction(action string)
     AfterAction(action string)
-    FinishAction(action string)
     HandlePanic(v interface{})
 }
 

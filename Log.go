@@ -274,6 +274,10 @@ type Logger struct {
     dispatcher *Dispatcher
 }
 
+func (l *Logger) init(name, logId string, dispatcher *Dispatcher) {
+    l.name, l.logId, l.dispatcher = name, logId, dispatcher
+}
+
 func (l *Logger) log(level int, format string, v ...interface{}) {
     if !l.dispatcher.isHandling(level) {
         return
@@ -293,16 +297,6 @@ func (l *Logger) log(level int, format string, v ...interface{}) {
     }
 
     l.dispatcher.addItem(item)
-}
-
-// GetName get name of logger
-func (l *Logger) GetName() string {
-    return l.name
-}
-
-// GetLogId get id of logger
-func (l *Logger) GetLogId() string {
-    return l.logId
 }
 
 func (l *Logger) Debug(format string, v ...interface{}) {
@@ -337,7 +331,7 @@ type Profiler struct {
     profileStack map[string]time.Time
 }
 
-func (p *Profiler) Reset() {
+func (p *Profiler) reset() {
     p.pushLog = nil
     p.counting = nil
     p.profile = nil

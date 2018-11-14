@@ -13,8 +13,6 @@ import (
 // Controller the base class of web and cmd controller
 type Controller struct {
     Object
-    Status int    // response status
-    Output []byte // response output
 }
 
 // GetBindInfo get action map as extra binding info
@@ -45,27 +43,6 @@ func (c *Controller) BeforeAction(action string) {
 func (c *Controller) AfterAction(action string) {
 }
 
-// FinishAction finish action hook
-func (c *Controller) FinishAction(action string) {
-    ctx := c.GetContext()
-
-    ctx.Notice("[%d(ms)] [1(MB)] [%s] [%s] profile[%s] counting[%s]",
-        ctx.GetElapseMs(),
-        ctx.GetPath(),
-        ctx.GetPushLogString(),
-        ctx.GetProfileString(),
-        ctx.GetCountingString(),
-    )
-
-    ctx.Profiler.Reset()
-
-    // send output at the end of the controller's lifecycle,
-    // give opportunity to modify output in AfterAction hook
-    if c.Status != 0 || c.Output != nil {
-        ctx.End(c.Status, c.Output)
-    }
-}
-
 // HandlePanic process unhandled action panic
 func (c *Controller) HandlePanic(v interface{}) {
     status := http.StatusInternalServerError
@@ -77,25 +54,24 @@ func (c *Controller) HandlePanic(v interface{}) {
         c.OutputJson(EmptyObject, status)
     }
 
-    if !App.GetServer().IsErrorLogOff(status) {
-        c.GetContext().Error("%s, trace[%s]", Util.ToString(v), Util.PanicTrace(TraceMaxDepth, false))
-    }
+    c.GetContext().Error("%s, trace[%s]", Util.ToString(v), Util.PanicTrace(TraceMaxDepth, false))
 }
 
 // Redirect output redirect response
 func (c *Controller) Redirect(location string, permanent bool) {
+    ctx := c.GetContext()
+    ctx.SetHeader("Location", location)
     if permanent {
-        c.Status = http.StatusMovedPermanently
+        ctx.End(http.StatusMovedPermanently, nil)
     } else {
-        c.Status = http.StatusFound
+        ctx.End(http.StatusFound, nil)
     }
-
-    c.GetContext().SetHeader("Location", location)
 }
 
 // OutputJson output json response
 func (c *Controller) OutputJson(data interface{}, status int, msg ...string) {
-    message := App.GetStatus().GetText(status, c.GetContext(), msg...)
+    ctx := c.GetContext()
+    message := App.GetStatus().GetText(status, ctx, msg...)
     output, e := json.Marshal(map[string]interface{}{
         "status":  status,
         "message": message,
@@ -106,16 +82,15 @@ func (c *Controller) OutputJson(data interface{}, status int, msg ...string) {
         panic(fmt.Sprintf("failed to marshal json, %s", e))
     }
 
-    c.Status = http.StatusOK
-    c.Output = output
-
-    c.GetContext().PushLog("status", status)
-    c.GetContext().SetHeader("Content-Type", "application/json; charset=utf-8")
+    ctx.PushLog("status", status)
+    ctx.SetHeader("Content-Type", "application/json; charset=utf-8")
+    ctx.End(http.StatusOK, output)
 }
 
 // OutputJsonp output jsonp response
 func (c *Controller) OutputJsonp(callback string, data interface{}, status int, msg ...string) {
-    message := App.GetStatus().GetText(status, c.GetContext(), msg...)
+    ctx := c.GetContext()
+    message := App.GetStatus().GetText(status, ctx, msg...)
     output, e := json.Marshal(map[string]interface{}{
         "status":  status,
         "message": message,
@@ -131,17 +106,16 @@ func (c *Controller) OutputJsonp(callback string, data interface{}, status int, 
     buf.Write(output)
     buf.WriteString(")")
 
-    c.Status = http.StatusOK
-    c.Output = buf.Bytes()
-
-    c.GetContext().PushLog("status", status)
-    c.GetContext().SetHeader("Content-Type", "text/javascript; charset=utf-8")
+    ctx.PushLog("status", status)
+    ctx.SetHeader("Content-Type", "text/javascript; charset=utf-8")
+    ctx.End(http.StatusOK, buf.Bytes())
 }
 
 // OutputView output rendered view
-func (c *Controller) OutputView(view string, data interface{}) {
-    c.Status = http.StatusOK
-    c.Output = App.GetView().Render(view, data)
-    c.GetContext().PushLog("status", c.Status)
-    c.GetContext().SetHeader("Content-Type", "text/html; charset=utf-8")
+func (c *Controller) OutputView(view string, data interface{}, contentType ...string) {
+    ctx := c.GetContext()
+    contentType = append(contentType, "text/html; charset=utf-8")
+    ctx.PushLog("status", http.StatusOK)
+    ctx.SetHeader("Content-Type", contentType[0])
+    ctx.End(http.StatusOK, App.GetView().Render(view, data))
 }

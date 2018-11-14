@@ -1,5 +1,0 @@
-package Filter
-
-func init() {
-
-}

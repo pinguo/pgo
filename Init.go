@@ -28,6 +28,7 @@ const (
     ActionPrefix       = "Action"
     ActionLength       = 6
     TraceMaxDepth      = 10
+    MaxPlugings        = 32
 )
 
 var (

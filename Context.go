@@ -1,42 +1,114 @@
 package pgo
 
 import (
-    "bytes"
-    "compress/gzip"
-    "encoding/json"
-    "errors"
     "flag"
     "fmt"
     "net/http"
     "os"
     "strings"
+    "sync"
     "time"
 
     "github.com/pinguo/pgo/Util"
 )
 
-// Context pgo request context.
+var (
+    contextPool = sync.Pool{
+        New: func() interface{} { return &Context{} },
+    }
+)
+
+// Context pgo request context, context is not goroutine
+// safe, copy context to use in other goroutines.
 type Context struct {
-    input        *http.Request
-    output       http.ResponseWriter
+    enableLog bool
+    response  Response
+    input     *http.Request
+    output    http.ResponseWriter
+
     startTime    time.Time
-    logId        string
     controllerId string
     actionId     string
     userData     map[string]interface{}
-    *Profiler
-    *Logger
+    plugins      []IPlugin
+    index        int
+    Profiler
+    Logger
 }
 
-func (c *Context) Init() {
-    c.startTime = time.Now()
-    c.Profiler = App.GetLog().GetProfiler()
-
-    if App.GetMode() == ModeCmd {
-        c.Logger = GLogger()
-    } else {
-        c.Logger = App.GetLog().GetLogger(App.name, c.GetLogId())
+func (c *Context) process(plugins []IPlugin) {
+    // generate request id
+    logId := c.GetHeader("X-Log-Id", "")
+    if logId == "" {
+        logId = Util.GenUniqueId()
     }
+
+    // reset properties
+    c.startTime = time.Now()
+    c.controllerId = ""
+    c.actionId = ""
+    c.userData = nil
+    c.plugins = plugins
+    c.index = -1
+    c.Profiler.reset()
+    c.Logger.init(App.GetName(), logId, App.GetLog())
+
+    // finish response
+    defer c.finish()
+
+    // process request
+    c.Next()
+}
+
+func (c *Context) finish() {
+    // process unhandled panic
+    if v := recover(); v != nil {
+        status := http.StatusInternalServerError
+        switch e := v.(type) {
+        case *Exception:
+            status = e.GetStatus()
+            c.End(status, []byte(App.GetStatus().GetText(status, c, e.GetMessage())))
+        default:
+            c.End(status, []byte(http.StatusText(status)))
+        }
+
+        if status != http.StatusNotFound {
+            c.Error("%s, trace[%s]", Util.ToString(v), Util.PanicTrace(TraceMaxDepth, false))
+        }
+    }
+
+    // write access log
+    if c.enableLog {
+        c.Notice("%s %s %d %d %dms pushlog[%s] profile[%s] counting[%s]",
+            c.GetMethod(), c.GetPath(), c.response.status, c.response.size, c.GetElapseMs(),
+            c.GetPushLogString(), c.GetProfileString(), c.GetCountingString())
+    }
+
+    // write header if not yet
+    c.response.finish()
+}
+
+// Next start running plugin chain
+func (c *Context) Next() {
+    c.index++
+    for num := len(c.plugins); c.index < num; c.index++ {
+        c.plugins[c.index].HandleRequest(c)
+    }
+}
+
+// Abort stop running plugin chain
+func (c *Context) Abort() {
+    c.index = MaxPlugings
+}
+
+// Copy copy context
+func (c *Context) Copy() *Context {
+    cp := *c
+    cp.Profiler.reset()
+    cp.userData = nil
+    cp.plugins = nil
+    cp.index = MaxPlugings
+    return &cp
 }
 
 func (c *Context) SetInput(r *http.Request) {
@@ -61,14 +133,7 @@ func (c *Context) GetElapseMs() int {
 }
 
 func (c *Context) GetLogId() string {
-    if len(c.logId) == 0 {
-        c.logId = c.GetHeader("X-Log-Id", "")
-        if len(c.logId) == 0 {
-            c.logId = Util.GenUniqueId()
-        }
-    }
-
-    return c.logId
+    return c.Logger.logId
 }
 
 func (c *Context) SetControllerId(id string) {
@@ -87,6 +152,7 @@ func (c *Context) GetActionId() string {
     return c.actionId
 }
 
+// SetUserData set user data to current context
 func (c *Context) SetUserData(key string, data interface{}) {
     if nil == c.userData {
         c.userData = make(map[string]interface{})
@@ -95,6 +161,7 @@ func (c *Context) SetUserData(key string, data interface{}) {
     c.userData[key] = data
 }
 
+// GetUserData get user data from current context
 func (c *Context) GetUserData(key string, dft interface{}) interface{} {
     if nil != c.userData {
         if data, ok := c.userData[key]; ok {
@@ -105,16 +172,16 @@ func (c *Context) GetUserData(key string, dft interface{}) interface{} {
     return dft
 }
 
-// get request method
+// GetMethod get request method
 func (c *Context) GetMethod() string {
     if c.input != nil {
         return c.input.Method
     }
 
-    return ""
+    return "CMD"
 }
 
-// get first url query value by name
+// GetQuery get first url query value by name
 func (c *Context) GetQuery(name, dft string) string {
     if c.input != nil {
         v := c.input.URL.Query().Get(name)
@@ -126,7 +193,7 @@ func (c *Context) GetQuery(name, dft string) string {
     return dft
 }
 
-// get first value of all url queries
+// GetQueryAll get first value of all url queries
 func (c *Context) GetQueryAll() map[string]string {
     m := make(map[string]string)
     if c.input != nil {
@@ -143,7 +210,7 @@ func (c *Context) GetQueryAll() map[string]string {
     return m
 }
 
-// get first post value by name
+// GetPost get first post value by name
 func (c *Context) GetPost(name, dft string) string {
     if c.input != nil {
         v := c.input.PostFormValue(name)
@@ -155,7 +222,7 @@ func (c *Context) GetPost(name, dft string) string {
     return dft
 }
 
-// get first value of all posts
+// GetPostAll get first value of all posts
 func (c *Context) GetPostAll() map[string]string {
     m := make(map[string]string)
     if c.input != nil {
@@ -173,7 +240,7 @@ func (c *Context) GetPostAll() map[string]string {
     return m
 }
 
-// get first param value by name, post take precedence over get
+// GetParam get first param value by name, post take precedence over get
 func (c *Context) GetParam(name, dft string) string {
     if c.input != nil {
         v := c.input.FormValue(name)
@@ -185,7 +252,7 @@ func (c *Context) GetParam(name, dft string) string {
     return dft
 }
 
-// get first value of all params, post take precedence over get
+// GetParamAll get first value of all params, post take precedence over get
 func (c *Context) GetParamAll() map[string]string {
     m := make(map[string]string)
     if c.input != nil {
@@ -203,13 +270,25 @@ func (c *Context) GetParamAll() map[string]string {
     return m
 }
 
-// get params parsed from a complex url, like parse_str() in php
-func (c *Context) GetFixedParamMap() map[string]interface{} {
-    // TODO k1=12&k2[0]=aa&k2[1]=bb&k2[2]=cc&k3[m1]=v1&k3[m2]=v2&k3[m3][0]=10
+// GetParamMap get map value from GET/POST
+func (c *Context) GetParamMap(name string) map[string]string {
+    // TODO name[k1]=v1&name[k2]=v2
     return nil
 }
 
-// get first cookie value by name
+// GetQueryMap get map value from GET
+func (c *Context) GetQueryMap(name string) map[string]string {
+    // TODO name[k1]=v1&name[k2]=v2
+    return nil
+}
+
+// GetPostMap get map value from POST
+func (c *Context) GetPostMap(name string) map[string]string {
+    // TODO name[k1]=v1&name[k2]=v2
+    return nil
+}
+
+// GetCookie get first cookie value by name
 func (c *Context) GetCookie(name, dft string) string {
     if c.input != nil {
         v, e := c.input.Cookie(name)
@@ -221,7 +300,7 @@ func (c *Context) GetCookie(name, dft string) string {
     return dft
 }
 
-// get first value of all cookies
+// GetCookieAll get first value of all cookies
 func (c *Context) GetCookieAll() map[string]string {
     m := make(map[string]string)
     if c.input != nil {
@@ -236,7 +315,7 @@ func (c *Context) GetCookieAll() map[string]string {
     return m
 }
 
-// get first header value by name，name is case-insensitive
+// GetHeader get first header value by name，name is case-insensitive
 func (c *Context) GetHeader(name, dft string) string {
     if c.input != nil {
         v := c.input.Header.Get(name)
@@ -248,7 +327,7 @@ func (c *Context) GetHeader(name, dft string) string {
     return dft
 }
 
-// get first value of all headers
+// GetHeaderAll get first value of all headers
 func (c *Context) GetHeaderAll() map[string]string {
     m := make(map[string]string)
     if c.input != nil {
@@ -264,7 +343,7 @@ func (c *Context) GetHeaderAll() map[string]string {
     return m
 }
 
-// get request path
+// GetPath get request path
 func (c *Context) GetPath() string {
     // for web
     if c.input != nil {
@@ -280,7 +359,7 @@ func (c *Context) GetPath() string {
     return "/"
 }
 
-// get client ip
+// GetClientIp get client ip
 func (c *Context) GetClientIp() string {
     if xff := c.GetHeader("X-Forwarded-For", ""); len(xff) > 0 {
         if pos := strings.IndexByte(xff, ','); pos > 0 {
@@ -310,27 +389,6 @@ func (c *Context) GetClientIp() string {
     return ""
 }
 
-// get json decoded body
-func (c *Context) GetJsonBody(target interface{}) error {
-    ct := c.GetHeader("Content-Type", "")
-    if !strings.HasPrefix(ct, "application/json") {
-        return errors.New("invalid content-type: " + ct)
-    }
-
-    return json.NewDecoder(c.input.Body).Decode(target)
-}
-
-// get raw body bytes
-func (c *Context) GetRawBody() []byte {
-    if c.input == nil {
-        return nil
-    }
-
-    buf := &bytes.Buffer{}
-    buf.ReadFrom(c.input.Body)
-    return buf.Bytes()
-}
-
 // validate query param, return string validator
 func (c *Context) ValidateQuery(name string, dft ...interface{}) *StringValidator {
     return ValidateString(c.GetQuery(name, ""), name, dft...)
@@ -341,7 +399,7 @@ func (c *Context) ValidatePost(name string, dft ...interface{}) *StringValidator
     return ValidateString(c.GetPost(name, ""), name, dft...)
 }
 
-// validate get or post param, return string validator
+// validate get/post param, return string validator
 func (c *Context) ValidateParam(name string, dft ...interface{}) *StringValidator {
     return ValidateString(c.GetParam(name, ""), name, dft...)
 }
@@ -360,28 +418,11 @@ func (c *Context) SetCookie(cookie *http.Cookie) {
     }
 }
 
-// send http response, gzip data if possible
+// send response
 func (c *Context) End(status int, data []byte) {
     if c.output != nil {
-        if len(http.StatusText(status)) == 0 {
-            status = http.StatusOK
-        }
-
-        c.SetHeader("X-Log-Id", c.GetLogId())
+        c.SetHeader("X-Log-Id", c.Logger.logId)
         c.SetHeader("X-Cost-Time", fmt.Sprintf("%dms", c.GetElapseMs()))
-
-        svr := App.GetServer()
-        if svr.GzipEnable && len(data) > svr.GzipMinBytes {
-            ae := c.GetHeader("Accept-Encoding", "")
-            if pos := strings.Index(ae, "gzip"); pos != -1 {
-                c.SetHeader("Content-Encoding", "gzip")
-                c.output.WriteHeader(status)
-                gz := gzip.NewWriter(c.output)
-                gz.Write(data)
-                gz.Close()
-                return
-            }
-        }
 
         c.output.WriteHeader(status)
         c.output.Write(data)
