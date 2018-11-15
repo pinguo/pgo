@@ -136,7 +136,7 @@ func (s *Server) SetPlugins(v []interface{}) {
 
 // ServerStats server stats
 type ServerStats struct {
-    NumReq  uint64 // total handled requests
+    NumReq  uint64 // number of handled requests
     NumGO   uint   // number of goroutines
     NumGC   uint   // number of gc runs
     MemMB   uint   // memory obtained from os
