@@ -45,10 +45,10 @@ type Server struct {
     enableAccessLog bool
     pluginNames     []string
 
-    totalReq uint64         // total requests server handled
-    plugins  []IPlugin      // active server plugin list
-    servers  []*http.Server // active http server list
-    pool     sync.Pool      // context pool
+    numReq  uint64         // request num handled
+    plugins []IPlugin      // active server plugin list
+    servers []*http.Server // active http server list
+    pool    sync.Pool      // context pool
 }
 
 func (s *Server) Construct() {
@@ -136,12 +136,12 @@ func (s *Server) SetPlugins(v []interface{}) {
 
 // ServerStats server stats
 type ServerStats struct {
-    TotalReq uint64 // total handled requests
-    MemMB    uint   // memory obtained from os
-    NumGO    uint   // number of goroutines
-    NumGC    uint   // number of gc runs
-    TimeGC   string // total time of gc pause
-    TimeRun  string // total time of app runs
+    NumReq  uint64 // total handled requests
+    NumGO   uint   // number of goroutines
+    NumGC   uint   // number of gc runs
+    MemMB   uint   // memory obtained from os
+    TimeGC  string // total time of gc pause
+    TimeRun string // total time of app runs
 }
 
 // GetStats get server stats
@@ -157,12 +157,12 @@ func (s *Server) GetStats() *ServerStats {
     }
 
     return &ServerStats{
-        TotalReq: atomic.LoadUint64(&s.totalReq),
-        MemMB:    uint(memStats.Sys / (1 << 20)),
-        NumGO:    uint(runtime.NumGoroutine()),
-        NumGC:    uint(memStats.NumGC),
-        TimeGC:   timeGC.String(),
-        TimeRun:  TimeRun().String(),
+        NumReq:  atomic.LoadUint64(&s.numReq),
+        NumGO:   uint(runtime.NumGoroutine()),
+        NumGC:   uint(memStats.NumGC),
+        MemMB:   uint(memStats.Sys / (1 << 20)),
+        TimeGC:  timeGC.String(),
+        TimeRun: TimeRun().String(),
     }
 }
 
@@ -204,8 +204,8 @@ func (s *Server) ServeCMD() {
 
 // ServeHTTP serve http request
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    // increase request count
-    atomic.AddUint64(&s.totalReq, 1)
+    // increase request num
+    atomic.AddUint64(&s.numReq, 1)
     ctx := s.pool.Get().(*Context)
 
     ctx.enableLog = s.enableAccessLog
