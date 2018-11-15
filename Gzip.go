@@ -50,6 +50,10 @@ type gzipWriter struct {
     writer *gzip.Writer
 }
 
+func (g *gzipWriter) Flush() {
+    g.writer.Flush()
+}
+
 func (g *gzipWriter) Write(data []byte) (n int, e error) {
     return g.writer.Write(data)
 }
