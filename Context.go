@@ -70,15 +70,15 @@ func (c *Context) finish() {
         }
     }
 
+    // write header if not yet
+    c.response.finish()
+
     // write access log
     if c.enableLog {
         c.Notice("%s %s %d %d %dms pushlog[%s] profile[%s] counting[%s]",
             c.GetMethod(), c.GetPath(), c.response.status, c.response.size, c.GetElapseMs(),
             c.GetPushLogString(), c.GetProfileString(), c.GetCountingString())
     }
-
-    // write header if not yet
-    c.response.finish()
 }
 
 // Next start running plugin chain
@@ -91,7 +91,7 @@ func (c *Context) Next() {
 
 // Abort stop running plugin chain
 func (c *Context) Abort() {
-    c.index = MaxPlugings
+    c.index = MaxPlugins
 }
 
 // Copy copy context
@@ -100,7 +100,7 @@ func (c *Context) Copy() *Context {
     cp.Profiler.reset()
     cp.userData = nil
     cp.plugins = nil
-    cp.index = MaxPlugings
+    cp.index = MaxPlugins
     return &cp
 }
 

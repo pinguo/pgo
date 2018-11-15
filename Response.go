@@ -47,6 +47,17 @@ func (r *Response) WriteString(s string) (n int, e error) {
     return
 }
 
+func (r *Response) ReadFrom(src io.Reader) (n int64, e error) {
+    r.finish()
+    if rf, ok := r.ResponseWriter.(io.ReaderFrom); ok {
+        n, e = rf.ReadFrom(src)
+    } else {
+        n, e = io.Copy(r.ResponseWriter, src)
+    }
+    r.size += int(n)
+    return
+}
+
 func (r *Response) Status() int {
     return r.status
 }

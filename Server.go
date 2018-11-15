@@ -374,7 +374,7 @@ func (s *Server) initPlugins() {
     // server is the last plugin
     s.plugins = append(s.plugins, s)
 
-    if len(s.plugins) > MaxPlugings {
+    if len(s.plugins) > MaxPlugins {
         panic("Server: too many plugins")
     }
 }

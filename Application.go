@@ -270,6 +270,7 @@ func (app *Application) coreComponents() map[string]string {
         "i18n":   "@pgo/I18n",
         "view":   "@pgo/View",
         "gzip":   "@pgo/Gzip",
+        "file":   "@pgo/File",
 
         "http": "@pgo/Client/Http/Client",
     }

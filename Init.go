@@ -28,7 +28,7 @@ const (
     ActionPrefix       = "Action"
     ActionLength       = 6
     TraceMaxDepth      = 10
-    MaxPlugings        = 32
+    MaxPlugins         = 32
 )
 
 var (
@@ -56,6 +56,7 @@ func init() {
     App.container.Bind(&I18n{})
     App.container.Bind(&View{})
     App.container.Bind(&Gzip{})
+    App.container.Bind(&File{})
 }
 
 // Run run app
