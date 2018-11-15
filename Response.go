@@ -5,6 +5,7 @@ import (
     "net/http"
 )
 
+// Response http.ResponseWriter wrapper
 type Response struct {
     http.ResponseWriter
     status int
