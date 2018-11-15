@@ -55,6 +55,7 @@ func init() {
     App.container.Bind(&Status{})
     App.container.Bind(&I18n{})
     App.container.Bind(&View{})
+    App.container.Bind(&Gzip{})
 }
 
 // Run run app

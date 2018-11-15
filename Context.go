@@ -6,16 +6,9 @@ import (
     "net/http"
     "os"
     "strings"
-    "sync"
     "time"
 
     "github.com/pinguo/pgo/Util"
-)
-
-var (
-    contextPool = sync.Pool{
-        New: func() interface{} { return &Context{} },
-    }
 )
 
 // Context pgo request context, context is not goroutine

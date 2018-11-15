@@ -43,10 +43,12 @@ type Server struct {
     writeTimeout    time.Duration // timeout for writing response
     statsInterval   time.Duration // interval for output server stats
     enableAccessLog bool
+    pluginNames     []string
 
     totalReq uint64         // total requests server handled
     plugins  []IPlugin      // active server plugin list
     servers  []*http.Server // active http server list
+    pool     sync.Pool      // context pool
 }
 
 func (s *Server) Construct() {
@@ -55,6 +57,10 @@ func (s *Server) Construct() {
     s.writeTimeout = DefaultTimeout
     s.statsInterval = 60 * time.Second
     s.enableAccessLog = true
+    s.pluginNames = []string{"gzip"}
+    s.pool.New = func() interface{} {
+        return new(Context)
+    }
 }
 
 // SetHttpAddr set http addr, if both httpAddr and httpsAddr
@@ -118,6 +124,14 @@ func (s *Server) SetStatsInterval(v string) {
 // SetEnableAccessLog set access log enable or not
 func (s *Server) SetEnableAccessLog(v bool) {
     s.enableAccessLog = v
+}
+
+// SetPlugins set plugin names
+func (s *Server) SetPlugins(v []interface{}) {
+    s.pluginNames = nil
+    for _, vv := range v {
+        s.pluginNames = append(s.pluginNames, vv.(string))
+    }
 }
 
 // ServerStats server stats
@@ -192,14 +206,14 @@ func (s *Server) ServeCMD() {
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     // increase request count
     atomic.AddUint64(&s.totalReq, 1)
-    ctx := contextPool.Get().(*Context)
+    ctx := s.pool.Get().(*Context)
 
     ctx.enableLog = s.enableAccessLog
     ctx.response.reset(w)
     ctx.input = r
     ctx.output = &ctx.response
     ctx.process(s.plugins)
-    contextPool.Put(ctx)
+    s.pool.Put(ctx)
 }
 
 // HandleRequest handle request of cmd or http,
@@ -353,9 +367,8 @@ func (s *Server) newHttpServer(addr string) *http.Server {
 }
 
 func (s *Server) initPlugins() {
-    plugins, _ := App.GetConfig().Get("app.server.plugins").([]interface{})
-    for _, id := range plugins {
-        s.plugins = append(s.plugins, App.Get(id.(string)).(IPlugin))
+    for _, name := range s.pluginNames {
+        s.plugins = append(s.plugins, App.Get(name).(IPlugin))
     }
 
     // server is the last plugin
