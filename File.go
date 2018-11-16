@@ -8,14 +8,15 @@ import (
     "github.com/pinguo/pgo/Util"
 )
 
-// File static file plugin
+// File file plugin, this plugin only handle file in @public directory,
+// request url with empty or excluded extension will not be handled.
 type File struct {
-    excludeExtension []string
+    excludeExtensions []string
 }
 
-func (f *File) SetExcludeExtension(v []interface{}) {
+func (f *File) SetExcludeExtensions(v []interface{}) {
     for _, vv := range v {
-        f.excludeExtension = append(f.excludeExtension, vv.(string))
+        f.excludeExtensions = append(f.excludeExtensions, vv.(string))
     }
 }
 
@@ -23,13 +24,13 @@ func (f *File) HandleRequest(ctx *Context) {
     // if extension is empty or excluded, pass
     if ext := filepath.Ext(ctx.GetPath()); ext == "" {
         return
-    } else if len(f.excludeExtension) != 0 {
-        if Util.SliceSearchString(f.excludeExtension, ext) != -1 {
+    } else if len(f.excludeExtensions) != 0 {
+        if Util.SliceSearchString(f.excludeExtensions, ext) != -1 {
             return
         }
     }
 
-    // abort request
+    // skip other plugins
     defer ctx.Abort()
 
     // GET or HEAD method is required
