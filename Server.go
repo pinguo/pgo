@@ -46,8 +46,8 @@ type Server struct {
     pluginNames     []string
 
     numReq  uint64         // request num handled
-    plugins []IPlugin      // active server plugin list
-    servers []*http.Server // active http server list
+    plugins []IPlugin      // server plugin list
+    servers []*http.Server // http server list
     pool    sync.Pool      // context pool
 }
 
@@ -171,6 +171,9 @@ func (s *Server) Serve() {
     // flush log when app end
     defer App.GetLog().Flush()
 
+    // initialize plugins
+    s.initPlugins()
+
     // process command request
     if App.GetMode() == ModeCmd {
         s.ServeCMD()
@@ -181,9 +184,6 @@ func (s *Server) Serve() {
     if s.httpAddr == "" && s.httpsAddr == "" {
         s.httpAddr = DefaultHttpAddr
     }
-
-    // initialize plugins
-    s.initPlugins()
 
     wg := sync.WaitGroup{}
     s.handleHttp(&wg)
