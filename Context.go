@@ -14,7 +14,6 @@ import (
 // Context pgo request context, context is not goroutine
 // safe, copy context to use in other goroutines.
 type Context struct {
-    enableLog bool
     response  Response
     input     *http.Request
     output    http.ResponseWriter
@@ -46,39 +45,11 @@ func (c *Context) process(plugins []IPlugin) {
     c.Profiler.reset()
     c.Logger.init(App.GetName(), logId, App.GetLog())
 
-    // finish response
-    defer c.finish()
-
     // process request
     c.Next()
-}
-
-func (c *Context) finish() {
-    // process unhandled panic
-    if v := recover(); v != nil {
-        status := http.StatusInternalServerError
-        switch e := v.(type) {
-        case *Exception:
-            status = e.GetStatus()
-            c.End(status, []byte(App.GetStatus().GetText(status, c, e.GetMessage())))
-        default:
-            c.End(status, []byte(http.StatusText(status)))
-        }
-
-        if status != http.StatusNotFound {
-            c.Error("%s, trace[%s]", Util.ToString(v), Util.PanicTrace(TraceMaxDepth, false))
-        }
-    }
 
     // write header if not yet
     c.response.finish()
-
-    // write access log
-    if c.enableLog {
-        c.Notice("%s %s %s %d %d %dms pushlog[%s] profile[%s] counting[%s]",
-            c.GetClientIp(), c.GetMethod(), c.GetPath(), c.response.status, c.response.size,
-            c.GetElapseMs(), c.GetPushLogString(), c.GetProfileString(), c.GetCountingString())
-    }
 }
 
 // Next start running plugin chain

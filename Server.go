@@ -16,6 +16,8 @@ import (
     "sync/atomic"
     "syscall"
     "time"
+
+    "github.com/pinguo/pgo/Util"
 )
 
 // Server the server component, configuration:
@@ -136,10 +138,10 @@ func (s *Server) SetPlugins(v []interface{}) {
 
 // ServerStats server stats
 type ServerStats struct {
+    MemMB   uint   // memory obtained from os
     NumReq  uint64 // number of handled requests
     NumGO   uint   // number of goroutines
     NumGC   uint   // number of gc runs
-    MemMB   uint   // memory obtained from os
     TimeGC  string // total time of gc pause
     TimeRun string // total time of app runs
 }
@@ -157,10 +159,10 @@ func (s *Server) GetStats() *ServerStats {
     }
 
     return &ServerStats{
+        MemMB:   uint(memStats.Sys / (1 << 20)),
         NumReq:  atomic.LoadUint64(&s.numReq),
         NumGO:   uint(runtime.NumGoroutine()),
         NumGC:   uint(memStats.NumGC),
-        MemMB:   uint(memStats.Sys / (1 << 20)),
         TimeGC:  timeGC.String(),
         TimeRun: TimeRun().String(),
     }
@@ -196,7 +198,7 @@ func (s *Server) Serve() {
 
 // ServeCMD serve command request
 func (s *Server) ServeCMD() {
-    ctx := Context{enableLog: s.enableAccessLog}
+    ctx := Context{}
 
     // only apply the last plugin for command
     ctx.process(s.plugins[len(s.plugins)-1:])
@@ -208,7 +210,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     atomic.AddUint64(&s.numReq, 1)
     ctx := s.pool.Get().(*Context)
 
-    ctx.enableLog = s.enableAccessLog
     ctx.response.reset(w)
     ctx.input = r
     ctx.output = &ctx.response
@@ -219,6 +220,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // HandleRequest handle request of cmd or http,
 // this method is in the last of plugin chain.
 func (s *Server) HandleRequest(ctx *Context) {
+    // finish request
+    defer s.finishRequest(ctx)
+
     // get request path and resolve route
     path := ctx.GetPath()
     route, params := App.GetRouter().Resolve(path)
@@ -376,6 +380,31 @@ func (s *Server) initPlugins() {
 
     if len(s.plugins) > MaxPlugins {
         panic("Server: too many plugins")
+    }
+}
+
+func (s *Server) finishRequest(ctx *Context) {
+    // process unhandled panic
+    if v := recover(); v != nil {
+        status := http.StatusInternalServerError
+        switch e := v.(type) {
+        case *Exception:
+            status = e.GetStatus()
+            ctx.End(status, []byte(App.GetStatus().GetText(status, ctx, e.GetMessage())))
+        default:
+            ctx.End(status, []byte(http.StatusText(status)))
+        }
+
+        if status != http.StatusNotFound {
+            ctx.Error("%s, trace[%s]", Util.ToString(v), Util.PanicTrace(TraceMaxDepth, false))
+        }
+    }
+
+    // write access log
+    if s.enableAccessLog {
+        ctx.Notice("%s %s %s %d %d %dms pushlog[%s] profile[%s] counting[%s]",
+            ctx.GetMethod(), ctx.GetPath(), ctx.GetClientIp(), ctx.response.status, ctx.response.size,
+            ctx.GetElapseMs(), ctx.GetPushLogString(), ctx.GetProfileString(), ctx.GetCountingString())
     }
 }
 

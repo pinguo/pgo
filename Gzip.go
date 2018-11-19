@@ -29,7 +29,7 @@ func (g *Gzip) HandleRequest(ctx *Context) {
 
     ext := filepath.Ext(ctx.GetPath())
     switch strings.ToLower(ext) {
-    case ".png", ".gif", ".jpeg", ".jpg":
+    case ".png", ".gif", ".jpeg", ".jpg", ".ico":
         return
     }
 
