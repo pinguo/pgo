@@ -75,9 +75,9 @@ func (c *Context) finish() {
 
     // write access log
     if c.enableLog {
-        c.Notice("%s %s %d %d %dms pushlog[%s] profile[%s] counting[%s]",
-            c.GetMethod(), c.GetPath(), c.response.status, c.response.size, c.GetElapseMs(),
-            c.GetPushLogString(), c.GetProfileString(), c.GetCountingString())
+        c.Notice("%s %s %s %d %d %dms pushlog[%s] profile[%s] counting[%s]",
+            c.GetClientIp(), c.GetMethod(), c.GetPath(), c.response.status, c.response.size,
+            c.GetElapseMs(), c.GetPushLogString(), c.GetProfileString(), c.GetCountingString())
     }
 }
 
