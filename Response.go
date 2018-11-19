@@ -25,6 +25,7 @@ func (r *Response) finish() {
     }
 }
 
+// WriteHeader cache status code until first write operation.
 func (r *Response) WriteHeader(status int) {
     if status > 0 && r.status != status && r.size == -1 {
         if len(http.StatusText(status)) > 0 {
@@ -33,6 +34,8 @@ func (r *Response) WriteHeader(status int) {
     }
 }
 
+// Write write data to underlying http.ResponseWriter
+// and record num bytes that has written.
 func (r *Response) Write(data []byte) (n int, e error) {
     r.finish()
     n, e = r.ResponseWriter.Write(data)
@@ -40,6 +43,8 @@ func (r *Response) Write(data []byte) (n int, e error) {
     return
 }
 
+// WriteString write string data to underlying http.ResponseWriter
+// and record num bytes that has written.
 func (r *Response) WriteString(s string) (n int, e error) {
     r.finish()
     n, e = io.WriteString(r.ResponseWriter, s)
@@ -47,6 +52,8 @@ func (r *Response) WriteString(s string) (n int, e error) {
     return
 }
 
+// ReadFrom is here to optimize copying from a regular file
+// to a *net.TCPConn with sendfile.
 func (r *Response) ReadFrom(src io.Reader) (n int64, e error) {
     r.finish()
     if rf, ok := r.ResponseWriter.(io.ReaderFrom); ok {
@@ -58,10 +65,12 @@ func (r *Response) ReadFrom(src io.Reader) (n int64, e error) {
     return
 }
 
+// Status get response status.
 func (r *Response) Status() int {
     return r.status
 }
 
+// Size get num bytes that has written.
 func (r *Response) Size() int {
     return r.size
 }
