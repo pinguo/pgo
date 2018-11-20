@@ -20,10 +20,6 @@ func (r *Response) reset(w http.ResponseWriter) {
 
 func (r *Response) finish() {
     if r.size == -1 {
-        if ct := r.ResponseWriter.Header().Get("Content-Type"); ct == "" {
-            r.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
-        }
-
         r.size = 0
         r.ResponseWriter.WriteHeader(r.status)
     }

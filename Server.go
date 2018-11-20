@@ -16,8 +16,6 @@ import (
     "sync/atomic"
     "syscall"
     "time"
-
-    "github.com/pinguo/pgo/Util"
 )
 
 // Server the server component, configuration:
@@ -198,7 +196,7 @@ func (s *Server) Serve() {
 
 // ServeCMD serve command request
 func (s *Server) ServeCMD() {
-    ctx := Context{}
+    ctx := Context{server: s}
 
     // only apply the last plugin for command
     ctx.process(s.plugins[len(s.plugins)-1:])
@@ -210,30 +208,32 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     atomic.AddUint64(&s.numReq, 1)
     ctx := s.pool.Get().(*Context)
 
-    ctx.response.reset(w)
+    ctx.server = s
     ctx.input = r
     ctx.output = &ctx.response
+    ctx.response.reset(w)
     ctx.process(s.plugins)
     s.pool.Put(ctx)
 }
 
 // HandleRequest handle request of cmd or http,
-// this method is in the last of plugin chain.
+// this method called in the last of plugin chain.
 func (s *Server) HandleRequest(ctx *Context) {
-    // finish request
-    defer s.finishRequest(ctx)
-
     // get request path and resolve route
     path := ctx.GetPath()
     route, params := App.GetRouter().Resolve(path)
 
     // get new controller bind to this route
     rv, info := s.createController(route, ctx)
-    controller := rv.Interface().(IController)
+    if !rv.IsValid() {
+        ctx.End(http.StatusNotFound, []byte("route not found"))
+        return
+    }
 
     // get action method by sequence number
     actionMap := info.(map[string]int)
     actionId := ctx.GetActionId()
+    controller := rv.Interface().(IController)
     action := rv.Method(actionMap[actionId])
 
     // fill empty string for missing param
@@ -383,31 +383,6 @@ func (s *Server) initPlugins() {
     }
 }
 
-func (s *Server) finishRequest(ctx *Context) {
-    // process unhandled panic
-    if v := recover(); v != nil {
-        status := http.StatusInternalServerError
-        switch e := v.(type) {
-        case *Exception:
-            status = e.GetStatus()
-            ctx.End(status, []byte(App.GetStatus().GetText(status, ctx, e.GetMessage())))
-        default:
-            ctx.End(status, []byte(http.StatusText(status)))
-        }
-
-        if status != http.StatusNotFound {
-            ctx.Error("%s, trace[%s]", Util.ToString(v), Util.PanicTrace(TraceMaxDepth, false))
-        }
-    }
-
-    // write access log
-    if s.enableAccessLog {
-        ctx.Notice("%s %s %s %d %d %dms pushlog[%s] profile[%s] counting[%s]",
-            ctx.GetMethod(), ctx.GetPath(), ctx.GetClientIp(), ctx.response.status, ctx.response.size,
-            ctx.GetElapseMs(), ctx.GetPushLogString(), ctx.GetProfileString(), ctx.GetCountingString())
-    }
-}
-
 func (s *Server) createController(route string, ctx *Context) (reflect.Value, interface{}) {
     if "/" == route {
         route += DefaultController
@@ -424,7 +399,7 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, in
         controllerId = route
         actionId = ""
     } else {
-        panic(NewException(http.StatusNotFound, "route not found"))
+        return reflect.Value{}, nil
     }
 
     rv, info := di.GetValue(s.getControllerName(controllerId), nil)
@@ -432,7 +407,7 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, in
 
     if len(actionId) > 0 {
         if _, ok := actions[actionId]; !ok {
-            panic(NewException(http.StatusNotFound, "route not found"))
+            return reflect.Value{}, nil
         }
     } else {
         if _, ok := actions[DefaultAction]; ok {
@@ -440,7 +415,7 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, in
         } else {
             method := ctx.GetMethod()
             if _, ok := actions[method]; !ok {
-                panic(NewException(http.StatusNotFound, "route not found"))
+                return reflect.Value{}, nil
             }
             actionId = method
         }
