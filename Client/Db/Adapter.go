@@ -3,6 +3,7 @@ package Db
 import (
     "context"
     "database/sql"
+    "strings"
     "time"
 
     "github.com/pinguo/pgo"
@@ -41,7 +42,7 @@ func (a *Adapter) GetDb(master bool) *sql.DB {
 }
 
 // Begin start a transaction with default timeout context and optional opts,
-// if opts is nil, defaults will be used.
+// if opts is nil, default option will be used.
 func (a *Adapter) Begin(opts ...*sql.TxOptions) bool {
     opts = append(opts, nil)
     ctx, _ := context.WithTimeout(context.Background(), defaultTimeout)
@@ -49,7 +50,7 @@ func (a *Adapter) Begin(opts ...*sql.TxOptions) bool {
 }
 
 // BeginContext start a transaction with specified context and optional opts,
-// if opts is nil, defaults will be used.
+// if opts is nil, default option will be used.
 func (a *Adapter) BeginContext(ctx context.Context, opts *sql.TxOptions) bool {
     if tx, e := a.GetDb(true).BeginTx(ctx, opts); e != nil {
         a.GetContext().Error("Db.Begin error, " + e.Error())
@@ -101,13 +102,13 @@ func (a *Adapter) Query(query string, args ...interface{}) *sql.Rows {
 
 // QueryContext perform query using a specified context.
 func (a *Adapter) QueryContext(ctx context.Context, query string, args ...interface{}) *sql.Rows {
-    pgoCtx, start := a.GetContext(), time.Now()
+    start := time.Now()
     defer func() {
         elapse := time.Since(start)
-        pgoCtx.ProfileAdd("Db.Query", elapse)
+        a.GetContext().ProfileAdd("Db.Query", elapse)
 
         if elapse >= a.client.slowLogTime && a.client.slowLogTime > 0 {
-            pgoCtx.Warn("Db.Query slow, elapse:%s, query:%s, args:%v", elapse, query, args)
+            a.GetContext().Warn("Db.Query slow, elapse:%s, query:%s, args:%v", elapse, query, args)
         }
     }()
 
@@ -120,12 +121,12 @@ func (a *Adapter) QueryContext(ctx context.Context, query string, args ...interf
         rows, err = a.GetDb(false).QueryContext(ctx, query, args...)
     }
 
-    if err == nil {
-        return rows
+    if err != nil {
+        a.GetContext().Error("Db.Query error, %s, query:%s, args:%v", err.Error(), query, args)
+        return nil
     }
 
-    pgoCtx.Error("Db.Query failed, error:%s, query:%s, args:%v", err.Error(), query, args)
-    return nil
+    return rows
 }
 
 // Exec perform exec using a default timeout context.
@@ -136,13 +137,13 @@ func (a *Adapter) Exec(query string, args ...interface{}) sql.Result {
 
 // ExecContext perform exec using a specified context.
 func (a *Adapter) ExecContext(ctx context.Context, query string, args ...interface{}) sql.Result {
-    pgoCtx, start := a.GetContext(), time.Now()
+    start := time.Now()
     defer func() {
         elapse := time.Since(start)
-        pgoCtx.ProfileAdd("Db.Exec", elapse)
+        a.GetContext().ProfileAdd("Db.Exec", elapse)
 
         if elapse >= a.client.slowLogTime && a.client.slowLogTime > 0 {
-            pgoCtx.Warn("Db.Exec slow, elapse:%s, query:%s, args:%v", elapse, query, args)
+            a.GetContext().Warn("Db.Exec slow, elapse:%s, query:%s, args:%v", elapse, query, args)
         }
     }()
 
@@ -155,10 +156,49 @@ func (a *Adapter) ExecContext(ctx context.Context, query string, args ...interfa
         res, err = a.GetDb(true).ExecContext(ctx, query, args...)
     }
 
-    if err == nil {
-        return res
+    if err != nil {
+        a.GetContext().Error("Db.Exec error, %s, query:%s, args:%v", err.Error(), query, args)
+        return nil
     }
 
-    pgoCtx.Error("Db.Exec failed, err:%s, query:%s, args:%v", err.Error(), query, args)
-    return nil
+    return res
+}
+
+// Prepare creates a prepared statement for later queries or executions,
+// the Close method must be called by caller.
+func (a *Adapter) Prepare(query string) *Stmt {
+    ctx, _ := context.WithTimeout(context.Background(), defaultTimeout)
+    return a.PrepareContext(ctx, query)
+}
+
+// PrepareContext creates a prepared statement for later queries or executions,
+// the Close method must be called by caller.
+func (a *Adapter) PrepareContext(ctx context.Context, query string) *Stmt {
+    var stmt *sql.Stmt
+    var err error
+
+    if a.tx != nil {
+        stmt, err = a.tx.PrepareContext(ctx, query)
+    } else {
+        master, pos := true, strings.IndexByte(query, ' ')
+        if pos != -1 && strings.ToUpper(query[:pos]) == "SELECT" {
+            master = false
+        }
+
+        stmt, err = a.GetDb(master).PrepareContext(ctx, query)
+    }
+
+    if err != nil {
+        a.GetContext().Error("Db.Prepare error, %s, query:%s", err.Error(), query)
+        return nil
+    }
+
+    // wrap stmt for profile purpose
+    stmtWrapper := stmtPool.Get().(*Stmt)
+    stmtWrapper.SetContext(a.GetContext())
+    stmtWrapper.stmt = stmt
+    stmtWrapper.client = a.client
+    stmtWrapper.query = query
+
+    return stmtWrapper
 }

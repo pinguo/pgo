@@ -46,7 +46,21 @@ func (c *Client) Init() {
         panic(fmt.Sprintf("Db: driver %s is not registered", c.driver))
     }
 
-    c.slaveDbs = make([]*sql.DB, len(c.slaves))
+    // create master db instance
+    if db, e := sql.Open(c.driver, c.dsn); e != nil {
+        panic(fmt.Sprintf("Db: open %s error, %s", c.dsn, e.Error()))
+    } else {
+        c.masterDb = db
+    }
+
+    // create slave db instances
+    for _, dsn := range c.slaves {
+        if db, e := sql.Open(c.driver, dsn); e != nil {
+            panic(fmt.Sprintf("Db: open %s error, %s", dsn, e.Error()))
+        } else {
+            c.slaveDbs = append(c.slaveDbs, db)
+        }
+    }
 }
 
 // SetDriver set driver db use, eg. "mysql"
@@ -74,40 +88,32 @@ func (c *Client) SetMaxIdleConn(maxIdleConn int) {
 }
 
 // SetMaxConnTime set conn life time, default is 1h
-func (c *Client) SetMaxConnTime(maxConnTime time.Duration) {
-    c.maxConnTime = maxConnTime
+func (c *Client) SetMaxConnTime(v string) {
+    if maxConnTime, err := time.ParseDuration(v); err != nil {
+        panic("Db.SetMaxConnTime error, " + err.Error())
+    } else {
+        c.maxConnTime = maxConnTime
+    }
 }
 
 // SetSlowTime set slow log time, default is 100ms
-func (c *Client) SetSlowLogTime(slowLogTime time.Duration) {
-    c.slowLogTime = slowLogTime
+func (c *Client) SetSlowLogTime(v string) {
+    if slowLogTime, err := time.ParseDuration(v); err != nil {
+        panic("Db.SetSlowLogTime error, " + err.Error())
+    } else {
+        c.slowLogTime = slowLogTime
+    }
 }
 
 // GetDb get a master or slave db instance
 func (c *Client) GetDb(master bool) *sql.DB {
-    if num := len(c.slaves); !master && num > 0 {
+    if num := len(c.slaveDbs); !master && num > 0 {
         idx := 0
         if num > 1 {
             idx = time.Now().Nanosecond() % num
         }
 
-        if c.slaveDbs[idx] == nil {
-            if db, e := sql.Open(c.driver, c.slaves[idx]); e != nil {
-                panic(fmt.Sprintf("Db: open %s error, %s", c.slaves[idx], e.Error()))
-            } else {
-                c.slaveDbs[idx] = db
-            }
-        }
-
         return c.slaveDbs[idx]
-    }
-
-    if c.masterDb == nil {
-        if db, e := sql.Open(c.driver, c.dsn); e != nil {
-            panic(fmt.Sprintf("Db: open %s error, %s", c.dsn, e.Error()))
-        } else {
-            c.masterDb = db
-        }
     }
 
     return c.masterDb

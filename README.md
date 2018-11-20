@@ -208,9 +208,8 @@ log, ok := cfg.Get("app.conponents.log").(map[string]interface{}) // 获取对�
 - 支持`URL`路由和`正则`路由(详见Router组件)
 - 支持URL动作(Action)和RESTFULL动作(Action)
 - 支持参数验证(详见ValidateXxx方法)
-- 支持BeforeAction/AfterAction/FinishAction钩子
+- 支持BeforeAction/AfterAction钩子
 - 支持HandlePanic钩子，捕获未处理异常
-- 支持过滤器(Filter)，TODO
 - 提供OutputXxx方法，方便输出各种类型数据
 
 示例：
