@@ -78,7 +78,25 @@ glide update            # 更新依赖包
 ```
 
 ## 基准测试
-TODO
+说明:
+- 测试机为4核8G虚拟机
+- php版本为7.1.24, 开启opcache
+- go版本为1.11.2, GOMAXPROCS=4
+- swoole版本1.9.21, worker_num=4, reactor_num=2
+- 输出均为字符串{"code": 200, "message": "success","data": "hello world"}
+- 命令: ab -n 1000000 -c 100 -k 'http://target-ip:8000/welcome'
+
+分类 | QPS | 平均响应时间(ms) |CPU
+---- | ---- | ---- | -----
+php-yii2 | 2715 | 36.601 | 72%
+php-msf | 20053 | 4.575 | 73%
+go-gin | 41798 | 2.339 | 55%
+go-pgo | 33902 | 2.842 | 64%
+
+结论:
+- pgo相比yii2性能提升10倍, 对低于php7的版本性能还要翻倍。
+- pgo相比msf性能提升70%, 相较于msf的yield模拟的协程，pgo协程理解和使用更简单。
+- pgo相比gin性能降低19%, 但pgo内置多种常用组件，工程化做得更好，使用方式类似yii2和msf。
 
 ## 快速开始
 1. 创建项目目录(以下三种方法均可)
