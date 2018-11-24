@@ -157,8 +157,7 @@ go-pgo | 33902 | 2.842 | 64%
     }
 
     func (w *WelcomeController) ActionIndex() {
-        data := pgo.Map{"text": "welcome to pgo-demo", "now": time.Now()}
-        w.OutputJson(data, http.StatusOK)
+        w.OutputJson("hello world", http.StatusOK)
     }
     ```
 5. 注册控制器(src/Controller/Init.go)
@@ -169,7 +168,6 @@ go-pgo | 33902 | 2.842 | 64%
 
     func init() {
         container := pgo.App.GetContainer()
-
         container.Bind(&WelcomeController{})
     }
     ```
