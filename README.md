@@ -56,7 +56,7 @@ PGO应用框架即"Pinguo GO application framework"，是Camera360广告服务�
     ├── Model/          # 模型目录(数据交互)
     ├── Service/        # 服务目录(业务逻辑)
     ├── Struct/         # 结构目录(数据定义)
-    ├── Test/           # 测试目录(单测/性能)
+    ├── Test/           # 测试目录
     ├── vendor/         # 第三方依赖目录
     ├── glide.lock      # 项目依赖锁文件
     └── glide.yaml      # 项目依赖配置文件
