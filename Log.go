@@ -100,7 +100,7 @@ type LogItem struct {
     Message string
 }
 
-// Dispatcher the log component, configuration:
+// Log the log component, configuration:
 // "log": {
 //     "levels": "ALL",
 //     "traceLevels": "DEBUG"
@@ -123,7 +123,7 @@ type LogItem struct {
 //         }
 //     }
 // }
-type Dispatcher struct {
+type Log struct {
     levels        int
     chanLen       int
     traceLevels   int
@@ -133,14 +133,14 @@ type Dispatcher struct {
     wg            sync.WaitGroup
 }
 
-func (d *Dispatcher) Construct() {
+func (d *Log) Construct() {
     d.levels = LevelAll
     d.chanLen = 1000
     d.traceLevels = LevelDebug
     d.flushInterval = 60 * time.Second
 }
 
-func (d *Dispatcher) Init() {
+func (d *Log) Init() {
     d.msgChan = make(chan *LogItem, d.chanLen)
 
     if len(d.targets) == 0 {
@@ -155,43 +155,43 @@ func (d *Dispatcher) Init() {
 }
 
 // SetLevels set levels to handle, default "ALL"
-func (d *Dispatcher) SetLevels(v interface{}) {
+func (d *Log) SetLevels(v interface{}) {
     if _, ok := v.(string); ok {
         d.levels = parseLevels(v.(string))
     } else if _, ok := v.(int); ok {
         d.levels = v.(int)
     } else {
-        panic(fmt.Sprintf("Dispatcher: invalid levels: %v", v))
+        panic(fmt.Sprintf("Log: invalid levels: %v", v))
     }
 }
 
 // SetChanLen set length of log channel, default 1000
-func (d *Dispatcher) SetChanLen(len int) {
+func (d *Log) SetChanLen(len int) {
     d.chanLen = len
 }
 
 // SetTraceLevels set levels to trace, default "DEBUG"
-func (d *Dispatcher) SetTraceLevels(v interface{}) {
+func (d *Log) SetTraceLevels(v interface{}) {
     if _, ok := v.(string); ok {
         d.traceLevels = parseLevels(v.(string))
     } else if _, ok := v.(int); ok {
         d.traceLevels = v.(int)
     } else {
-        panic(fmt.Sprintf("Dispatcher: invalid trace levels: %v", v))
+        panic(fmt.Sprintf("Log: invalid trace levels: %v", v))
     }
 }
 
 // SetFlushInterval set interval to flush log, default "60s"
-func (d *Dispatcher) SetFlushInterval(v string) {
+func (d *Log) SetFlushInterval(v string) {
     if flushInterval, err := time.ParseDuration(v); err != nil {
-        panic(fmt.Sprintf("Dispatcher: parse flushInterval error, val:%s, err:%s", v, err.Error()))
+        panic(fmt.Sprintf("Log: parse flushInterval error, val:%s, err:%s", v, err.Error()))
     } else {
         d.flushInterval = flushInterval
     }
 }
 
 // SetTargets set output target, ConsoleTarget will be used if no targets specified
-func (d *Dispatcher) SetTargets(targets map[string]interface{}) {
+func (d *Log) SetTargets(targets map[string]interface{}) {
     d.targets = make(map[string]ITarget)
 
     for name, val := range targets {
@@ -206,26 +206,26 @@ func (d *Dispatcher) SetTargets(targets map[string]interface{}) {
 }
 
 // GetLogger get a new logger with name and id specified
-func (d *Dispatcher) GetLogger(name, logId string) *Logger {
+func (d *Log) GetLogger(name, logId string) *Logger {
     return &Logger{name, logId, d}
 }
 
 // GetProfiler get a new profiler
-func (d *Dispatcher) GetProfiler() *Profiler {
+func (d *Log) GetProfiler() *Profiler {
     return &Profiler{}
 }
 
 // Flush close msg chan and wait loop end
-func (d *Dispatcher) Flush() {
+func (d *Log) Flush() {
     close(d.msgChan)
     d.wg.Wait()
 }
 
-func (d *Dispatcher) isHandling(level int) bool {
+func (d *Log) isHandling(level int) bool {
     return level&d.levels != 0
 }
 
-func (d *Dispatcher) addItem(item *LogItem) {
+func (d *Log) addItem(item *LogItem) {
     if d.traceLevels&item.Level != 0 {
         if _, file, line, ok := runtime.Caller(3); ok {
             if pos := strings.LastIndex(file, "src/"); pos > 0 {
@@ -239,7 +239,7 @@ func (d *Dispatcher) addItem(item *LogItem) {
     d.msgChan <- item
 }
 
-func (d *Dispatcher) loop() {
+func (d *Log) loop() {
     flushTimer := time.Tick(d.flushInterval)
 
     for {
@@ -269,17 +269,17 @@ end:
 
 // Logger
 type Logger struct {
-    name       string
-    logId      string
-    dispatcher *Dispatcher
+    name  string
+    logId string
+    log   *Log
 }
 
-func (l *Logger) init(name, logId string, dispatcher *Dispatcher) {
-    l.name, l.logId, l.dispatcher = name, logId, dispatcher
+func (l *Logger) init(name, logId string, log *Log) {
+    l.name, l.logId, l.log = name, logId, log
 }
 
-func (l *Logger) log(level int, format string, v ...interface{}) {
-    if !l.dispatcher.isHandling(level) {
+func (l *Logger) logMsg(level int, format string, v ...interface{}) {
+    if !l.log.isHandling(level) {
         return
     }
 
@@ -296,31 +296,31 @@ func (l *Logger) log(level int, format string, v ...interface{}) {
         item.Message = fmt.Sprintf(format, v...)
     }
 
-    l.dispatcher.addItem(item)
+    l.log.addItem(item)
 }
 
 func (l *Logger) Debug(format string, v ...interface{}) {
-    l.log(LevelDebug, format, v...)
+    l.logMsg(LevelDebug, format, v...)
 }
 
 func (l *Logger) Info(format string, v ...interface{}) {
-    l.log(LevelInfo, format, v...)
+    l.logMsg(LevelInfo, format, v...)
 }
 
 func (l *Logger) Notice(format string, v ...interface{}) {
-    l.log(LevelNotice, format, v...)
+    l.logMsg(LevelNotice, format, v...)
 }
 
 func (l *Logger) Warn(format string, v ...interface{}) {
-    l.log(LevelWarn, format, v...)
+    l.logMsg(LevelWarn, format, v...)
 }
 
 func (l *Logger) Error(format string, v ...interface{}) {
-    l.log(LevelError, format, v...)
+    l.logMsg(LevelError, format, v...)
 }
 
 func (l *Logger) Fatal(format string, v ...interface{}) {
-    l.log(LevelFatal, format, v...)
+    l.logMsg(LevelFatal, format, v...)
 }
 
 // Profiler

@@ -49,7 +49,7 @@ func init() {
 
     // bind core object
     App.container.Bind(&Router{})
-    App.container.Bind(&Dispatcher{})
+    App.container.Bind(&Log{})
     App.container.Bind(&ConsoleTarget{})
     App.container.Bind(&FileTarget{})
     App.container.Bind(&Status{})

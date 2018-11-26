@@ -404,7 +404,7 @@ func (t *TestController) ActionTest() {
 示例：
 ```go
 // 日志组件配置示例，app.components.log
-// "log": { //组件ID, class固定为"@pgo/Dispatcher"
+// "log": { //组件ID, class固定为"@pgo/Log"
 //     "levels": "ALL",
 //     "traceLevels": "DEBUG"
 //     "chanLen": 1000,

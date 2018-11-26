@@ -41,7 +41,7 @@ type Application struct {
     components  map[string]interface{}
     lock        sync.RWMutex
     router      *Router
-    log         *Dispatcher
+    log         *Log
     status      *Status
     i18n        *I18n
     view        *View
@@ -198,9 +198,9 @@ func (app *Application) GetRouter() *Router {
 }
 
 // GetLog get log component
-func (app *Application) GetLog() *Dispatcher {
+func (app *Application) GetLog() *Log {
     if app.log == nil {
-        app.log = app.Get("log").(*Dispatcher)
+        app.log = app.Get("log").(*Log)
     }
 
     return app.log
@@ -265,7 +265,7 @@ func (app *Application) loadComponent(id string) {
 func (app *Application) coreComponents() map[string]string {
     return map[string]string{
         "router": "@pgo/Router",
-        "log":    "@pgo/Dispatcher",
+        "log":    "@pgo/Log",
         "status": "@pgo/Status",
         "i18n":   "@pgo/I18n",
         "view":   "@pgo/View",
