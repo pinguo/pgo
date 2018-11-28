@@ -123,12 +123,12 @@ go-pgo | 33902 | 2.842 | 64%
                     "info": {
                         "class": "@pgo/FileTarget",
                         "levels": "DEBUG,INFO,NOTICE",
-                        "filePath": "@runtime/info.log",
+                        "filePath": "@runtime/info.log"
                     },
                     "error": {
                         "class": "@pgo/FileTarget",
                         "levels": "WARN,ERROR,FATAL",
-                        "filePath": "@runtime/error.log",
+                        "filePath": "@runtime/error.log"
                     },
                     "console": {
                         "class": "@pgo/ConsoleTarget",
