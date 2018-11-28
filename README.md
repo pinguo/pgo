@@ -147,9 +147,10 @@ go-pgo | 33902 | 2.842 | 64%
     package Controller
 
     import (
-        "github.com/pinguo/pgo"
         "net/http"
         "time"
+     
+        "github.com/pinguo/pgo"
     )
 
     type WelcomeController struct {
