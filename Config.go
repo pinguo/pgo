@@ -2,6 +2,7 @@ package pgo
 
 import (
     "encoding/json"
+    "fmt"
     "io/ioutil"
     "os"
     "path/filepath"
@@ -37,6 +38,7 @@ func (c *Config) Construct() {
     }
 
     c.AddParser("json", &JsonConfigParser{})
+    c.AddParser("yaml", &YamlConfigParser{})
 }
 
 // AddParser add parser for file with ext extension
@@ -177,7 +179,36 @@ func (j *JsonConfigParser) Parse(path string) map[string]interface{} {
 
     var data map[string]interface{}
     if e := json.Unmarshal(content, &data); e != nil {
-        panic("jsonConfigParser: failed to parse file: " + path)
+        panic(fmt.Sprintf("jsonConfigParser: failed to parse file: %s, %s", path, e.Error()))
+    }
+
+    return data
+}
+
+// YamlConfigParser parser for yaml config
+type YamlConfigParser struct {
+}
+
+// Parse parse yaml config, environment value like ${env||default} will expand
+func (y *YamlConfigParser) Parse(path string) map[string]interface{} {
+    h, e := os.Open(path)
+    if e != nil {
+        panic("YamlConfigParser: failed to open file: " + path)
+    }
+
+    defer h.Close()
+
+    content, e := ioutil.ReadAll(h)
+    if e != nil {
+        panic("YamlConfigParser: failed to read file: " + path)
+    }
+
+    // expand env: ${env||default}
+    content = Util.ExpandEnv(content)
+
+    var data map[string]interface{}
+    if e := Util.YamlUnmarshal(content, &data); e != nil {
+        panic(fmt.Sprintf("YamlConfigParser: failed to parse file: %s, %s", path, e.Error()))
     }
 
     return data
