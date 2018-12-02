@@ -91,41 +91,29 @@ glide update            # 更新依赖包
     - 参见《项目目录》手动创建
     - 从[pgo-demo](https://github.com/pinguo/pgo-demo)克隆目录结构
     - 复制makefile至项目根目录并执行`make init`
-2. 修改配置文件(conf/app.json)
-    ```json
-    {
-        "name": "pgo-demo",
-        "GOMAXPROCS": 2,
-        "runtimePath": "@app/runtime",
-        "publicPath": "@app/public",
-        "viewPath": "@app/view",
-        "server": {
-            "httpAddr": "0.0.0.0:8000",
-            "readTimeout": "30s",
-            "writeTimeout": "30s"
-        },
-        "components": {
-            "log": {
-                "levels": "ALL",
-                "targets": {
-                    "info": {
-                        "class": "@pgo/FileTarget",
-                        "levels": "DEBUG,INFO,NOTICE",
-                        "filePath": "@runtime/info.log"
-                    },
-                    "error": {
-                        "class": "@pgo/FileTarget",
-                        "levels": "WARN,ERROR,FATAL",
-                        "filePath": "@runtime/error.log"
-                    },
-                    "console": {
-                        "class": "@pgo/ConsoleTarget",
-                        "levels": "ALL"
-                    }
-                }
-            }
-        }
-    }
+2. 修改配置文件(conf/app.yaml)
+    ```yaml
+    name:        "pgo-demo"
+    GOMAXPROCS:  2
+    runtimePath: "@app/runtime"
+    server:
+        httpAddr:  "0.0.0.0:8000"
+        debugAddr: "0.0.0.0:8100"
+    components:
+        log:
+            levels: "ALL"
+            targets:
+                info:
+                    class:    "@pgo/FileTarget"
+                    levels:   "DEBUG,INFO,NOTICE"
+                    filePath: "@runtime/info.log"
+                error:
+                    class:    "@pgo/FileTarget"
+                    levels:   "WARN,ERROR,FATAL"
+                    filePath: "@runtime/error.log"
+                console:
+                    class:  "@pgo/ConsoleTarget"
+                    levels: "ALL"
     ```
 3. 安装PGO(以下两种方法均可)
     - 在项目根目录执行`export GOPATH=$(pwd) && cd src && glide get github.com/pinguo/pgo`
