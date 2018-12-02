@@ -4,7 +4,7 @@ import (
     "fmt"
     "io"
 
-    "gopkg.in/yaml.v2"
+    "github.com/go-yaml/yaml"
 )
 
 // YamlMarshal wrapper for yaml.Marshal.
