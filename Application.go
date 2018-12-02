@@ -18,15 +18,13 @@ import (
 // 3. pgo.Run(): serve
 //
 // configuration:
-// {
-//     "name": "app-name",
-//     "GOMAXPROCS": 2,
-//     "runtimePath": "@app/runtime",
-//     "publicPath": "@app/public",
-//     "viewPath": "@viewPath",
-//     "server": {},
-//     "components": {}
-// }
+// name:        "app-name"
+// GOMAXPROCS:  2
+// runtimePath: "@app/runtime"
+// publicPath:  "@app/public"
+// viewPath:    "@viewPath"
+// server:      {}
+// components:  {}
 type Application struct {
     mode        int
     env         string

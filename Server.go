@@ -19,18 +19,17 @@ import (
 )
 
 // Server the server component, configuration:
-// "server": {
-//     "httpAddr": "0.0.0.0:8000",
-//     "debugAddr": "0.0.0.0:8100",
-//     "httpsAddr": "0.0.0.0:8443",
-//     "crtFile": "@app/conf/site.crt",
-//     "keyFile": "@app/conf/site.key",
-//     "maxHeaderBytes": 1024000,
-//     "readTimeout": "30s",
-//     "writeTimeout": "30s",
-//     "statsInterval": "60s",
-//     "enableAccessLog": true
-// }
+// server:
+//     httpAddr:  "0.0.0.0:8000"
+//     debugAddr: "0.0.0.0:8100"
+//     httpsAddr: "0.0.0.0:8443"
+//     crtFile: "@app/conf/site.crt"
+//     keyFile: "@app/conf/site.key"
+//     maxHeaderBytes: 1024000
+//     readTimeout:   "30s"
+//     writeTimeout:  "30s"
+//     statsInterval: "60s"
+//     enableAccessLog: true
 type Server struct {
     httpAddr  string // address for http
     httpsAddr string // address for https

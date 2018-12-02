@@ -148,8 +148,6 @@ func (c *Config) Load(name string) {
             if parser, ok := c.parsers[ext[1:]]; ok {
                 if conf := parser.Parse(f); conf != nil {
                     Util.MapMerge(c.data, map[string]interface{}{name: conf})
-                } else {
-                    panic("Config: failed to parse file: " + f)
                 }
             }
         }
