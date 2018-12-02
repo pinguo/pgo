@@ -10,13 +10,11 @@ import (
 )
 
 // View the view component, configuration:
-// "view": {
-//     "suffix": ".html",
-//     "commons": [
-//         "@view/common/header.html",
-//         "@view/common/footer.html"
-//     ]
-// }
+// view:
+//     suffix: ".html"
+//     commons:
+//         - "@view/common/header.html"
+//         - "@view/common/footer.html"
 type View struct {
     suffix    string
     commons   []string

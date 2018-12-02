@@ -12,10 +12,9 @@ import (
 // lower case lang code, upper case area code.
 // lang file name format is i18n_{lang}.json,
 // and located in conf directory, configuration:
-// "i18n": {
-//     "sourceLang": "en",
-//     "targetLang": [ "en", "zh-CN", "zh-TW"]
-// }
+// i18n:
+//     sourceLang: "en"
+//     targetLang: [ "en", "zh-CN", "zh-TW"]
 type I18n struct {
     sourceLang string
     targetLang map[string]bool

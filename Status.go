@@ -8,12 +8,10 @@ import (
 )
 
 // Status the status component, configuration:
-// "status": {
-//     "useI18n": false,
-//     "mapping": {
-//         "11002": "Verify Sign Error"
-//     }
-// }
+// status:
+//     useI18n: false
+//     mapping:
+//         11002: "Verify Sign Error"
 type Status struct {
     useI18n bool
     mapping map[int]string

@@ -24,12 +24,10 @@ type routeRule struct {
 }
 
 // Router the router component, configuration:
-// "router": {
-//     "rules": [
-//         "^/foo/all$ => /foo/index",
-//         "^/api/user/(\\d+)$ => /api/user"
-//     ]
-// }
+// router:
+//     rules:
+//         - "^/foo/all$ => /foo/index"
+//         - "^/api/user/(\d+)$ => /api/user"
 type Router struct {
     reFmt *regexp.Regexp
     rules []routeRule

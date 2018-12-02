@@ -101,28 +101,24 @@ type LogItem struct {
 }
 
 // Log the log component, configuration:
-// "log": {
-//     "levels": "ALL",
-//     "traceLevels": "DEBUG"
-//     "chanLen": 1000,
-//     "flushInterval": "60s",
-//     "targets": {
-//         "info": {
-//             "class": "@pgo/FileTarget",
-//             "levels": "DEBUG,INFO,NOTICE",
-//             "filePath": "@runtime/info.log",
-//             "maxLogFile": 10,
-//             "rotate": "daily"
-//         },
-//         "error": {
-//             "class": "@pgo/FileTarget",
-//             "levels": "WARN,ERROR,FATAL",
-//             "filePath": "@runtime/error.log",
-//             "maxLogFile": 10,
-//             "rotate": "daily"
-//         }
-//     }
-// }
+// log:
+//     levels: "ALL"
+//     traceLevels: "DEBUG"
+//     chanLen: 1000
+//     flushInterval: "60s"
+//     targets:
+//         info:
+//             class: "@pgo/FileTarget"
+//             levels: "DEBUG,INFO,NOTICE"
+//             filePath: "@runtime/info.log"
+//             maxLogFile: 10
+//             rotate: "daily"
+//         error: {
+//             class: "@pgo/FileTarget"
+//             levels: "WARN,ERROR,FATAL"
+//             filePath: "@runtime/error.log"
+//             maxLogFile: 10
+//             rotate: "daily"
 type Log struct {
     levels        int
     chanLen       int
@@ -512,15 +508,14 @@ func (c *ConsoleTarget) Flush(final bool) {
 }
 
 // FileTarget target for file, configuration:
-// "info": {
-//     "class": "@pgo/FileTarget",
-//     "levels": "DEBUG,INFO,NOTICE",
-//     "filePath": "@runtime/info.log",
-//     "maxLogFile": 10,
-//     "maxBufferByte": 10485760,
-//     "maxBufferLine": 10000,
-//     "rotate": "daily"
-// }
+// info:
+//     class: "@pgo/FileTarget"
+//     levels: "DEBUG,INFO,NOTICE"
+//     filePath: "@runtime/info.log"
+//     maxLogFile: 10
+//     maxBufferByte: 10485760
+//     maxBufferLine: 10000
+//     rotate: "daily"
 type FileTarget struct {
     Target
     filePath      string
