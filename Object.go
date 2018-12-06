@@ -1,9 +1,5 @@
 package pgo
 
-import (
-    "reflect"
-)
-
 // Object base class of context based object
 type Object struct {
     context *Context
@@ -21,13 +17,6 @@ func (o *Object) SetContext(ctx *Context) {
 
 // GetObject create new object and inject context
 func (o *Object) GetObject(class interface{}, params ...interface{}) interface{} {
-    hook := func(rv reflect.Value) {
-        // inject context before construct
-        if obj, ok := rv.Interface().(IObject); ok {
-            obj.SetContext(o.GetContext())
-        }
-    }
-
-    params = append(params, OnReflectNew(hook))
+    params = append(params, o.GetContext())
     return CreateObject(class, params...)
 }

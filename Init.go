@@ -22,6 +22,7 @@ const (
     ControllerWeb      = "Controller"
     ControllerCmd      = "Command"
     ConstructMethod    = "Construct"
+    DestructMethod     = "Destruct"
     InitMethod         = "Init"
     VendorPrefix       = "vendor/"
     VendorLength       = 7

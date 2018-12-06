@@ -223,17 +223,14 @@ func (s *Server) HandleRequest(ctx *Context) {
     route, params := App.GetRouter().Resolve(path)
 
     // get new controller bind to this route
-    rv, info := s.createController(route, ctx)
+    rv, action := s.createController(route, ctx)
     if !rv.IsValid() {
         ctx.End(http.StatusNotFound, []byte("route not found"))
         return
     }
 
-    // get action method by sequence number
-    actionMap := info.(map[string]int)
     actionId := ctx.GetActionId()
     controller := rv.Interface().(IController)
-    action := rv.Method(actionMap[actionId])
 
     // fill empty string for missing param
     numIn := action.Type().NumIn()
@@ -382,7 +379,7 @@ func (s *Server) initPlugins() {
     }
 }
 
-func (s *Server) createController(route string, ctx *Context) (reflect.Value, interface{}) {
+func (s *Server) createController(route string, ctx *Context) (reflect.Value, reflect.Value) {
     if "/" == route {
         route += DefaultController
     }
@@ -398,15 +395,15 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, in
         controllerId = route
         actionId = ""
     } else {
-        return reflect.Value{}, nil
+        return reflect.Value{}, reflect.Value{}
     }
 
-    rv, info := di.GetValue(s.getControllerName(controllerId), nil)
-    actions := info.(map[string]int)
+    controllerName := s.getControllerName(controllerId)
+    actions := di.GetInfo(controllerName).(map[string]int)
 
     if len(actionId) > 0 {
         if _, ok := actions[actionId]; !ok {
-            return reflect.Value{}, nil
+            return reflect.Value{}, reflect.Value{}
         }
     } else {
         if _, ok := actions[DefaultAction]; ok {
@@ -414,7 +411,7 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, in
         } else {
             method := ctx.GetMethod()
             if _, ok := actions[method]; !ok {
-                return reflect.Value{}, nil
+                return reflect.Value{}, reflect.Value{}
             }
             actionId = method
         }
@@ -422,9 +419,10 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, in
 
     ctx.SetControllerId(controllerId)
     ctx.SetActionId(actionId)
-    rv.Interface().(IObject).SetContext(ctx)
 
-    return rv, info
+    controller := di.GetValue(controllerName, nil, ctx)
+    action := controller.Method(actions[actionId])
+    return controller, action
 }
 
 func (s *Server) getControllerName(id string) string {

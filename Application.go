@@ -23,6 +23,7 @@ import (
 // runtimePath: "@app/runtime"
 // publicPath:  "@app/public"
 // viewPath:    "@viewPath"
+// container:   {}
 // server:      {}
 // components:  {}
 type Application struct {
@@ -91,7 +92,8 @@ func (app *Application) Init() {
     ConstructAndInit(app.config, nil)
 
     // initialize container object
-    ConstructAndInit(app.container, nil)
+    cntConf, _ := app.config.Get("app.container").(map[string]interface{})
+    ConstructAndInit(app.container, cntConf)
 
     // initialize server object
     svrConf, _ := app.config.Get("app.server").(map[string]interface{})

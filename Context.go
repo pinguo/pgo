@@ -5,14 +5,20 @@ import (
     "fmt"
     "net/http"
     "os"
+    "reflect"
     "strings"
     "time"
 
     "github.com/pinguo/pgo/Util"
 )
 
+type objectItem struct {
+    name string
+    rv   reflect.Value
+}
+
 // Context pgo request context, context is not goroutine
-// safe, copy context to use in other goroutines.
+// safe, copy context to use in other goroutines.f
 type Context struct {
     server   *Server
     response Response
@@ -25,6 +31,8 @@ type Context struct {
     userData     map[string]interface{}
     plugins      []IPlugin
     index        int
+    objects      []objectItem
+
     Profiler
     Logger
 }
@@ -78,6 +86,28 @@ func (c *Context) finish() {
             c.GetMethod(), c.GetPath(), c.response.status, c.response.size, c.GetElapseMs(),
             c.GetPushLogString(), c.GetProfileString(), c.GetCountingString())
     }
+
+    // clean objects
+    c.cleanObjects()
+}
+
+func (c *Context) addObject(name string, rv reflect.Value) {
+    c.objects = append(c.objects, objectItem{name, rv})
+}
+
+func (c *Context) cleanObjects() {
+    container := App.GetContainer()
+    for idx := len(c.objects) - 1; idx >= 0; idx-- {
+        name, rv := c.objects[idx].name, c.objects[idx].rv
+        container.PutValue(name, rv)
+    }
+    c.objects = nil
+}
+
+// Reset manually reset resources for long lived command
+func (c *Context) Reset() {
+    c.cleanObjects()
+    c.Profiler.reset()
 }
 
 // Next start running plugin chain
