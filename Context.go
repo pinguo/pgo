@@ -18,7 +18,7 @@ type objectItem struct {
 }
 
 // Context pgo request context, context is not goroutine
-// safe, copy context to use in other goroutines.f
+// safe, copy context to use in other goroutines
 type Context struct {
     server   *Server
     response Response
@@ -37,6 +37,7 @@ type Context struct {
     Logger
 }
 
+// start plugin chain process
 func (c *Context) process(plugins []IPlugin) {
     // generate request id
     logId := c.GetHeader("X-Log-Id", "")
@@ -62,6 +63,7 @@ func (c *Context) process(plugins []IPlugin) {
 
 }
 
+// finish process request
 func (c *Context) finish() {
     // process unhandled panic
     if v := recover(); v != nil {
@@ -83,31 +85,33 @@ func (c *Context) finish() {
     // write access log
     if c.server.enableAccessLog {
         c.Notice("%s %s %d %d %dms pushlog[%s] profile[%s] counting[%s]",
-            c.GetMethod(), c.GetPath(), c.response.status, c.response.size, c.GetElapseMs(),
+            c.GetMethod(), c.GetPath(), c.GetStatus(), c.GetSize(), c.GetElapseMs(),
             c.GetPushLogString(), c.GetProfileString(), c.GetCountingString())
     }
 
     // clean objects
-    c.cleanObjects()
+    c.clean()
 }
 
-func (c *Context) addObject(name string, rv reflect.Value) {
-    c.objects = append(c.objects, objectItem{name, rv})
-}
-
-func (c *Context) cleanObjects() {
-    container := App.GetContainer()
-    for idx := len(c.objects) - 1; idx >= 0; idx-- {
-        name, rv := c.objects[idx].name, c.objects[idx].rv
-        container.PutValue(name, rv)
+// cache object in context
+func (c *Context) cache(name string, rv reflect.Value) {
+    if App.GetMode() == ModeWeb && len(c.objects) < MaxCacheObjects {
+        c.objects = append(c.objects, objectItem{name, rv})
     }
-    c.objects = nil
 }
 
-// Reset manually reset resources for long lived command
-func (c *Context) Reset() {
-    c.cleanObjects()
-    c.Profiler.reset()
+// clean all cached objects
+func (c *Context) clean() {
+    container, num := App.GetContainer(), len(c.objects)
+    for i := 0; i < num; i++ {
+        name, rv := c.objects[i].name, c.objects[i].rv
+        container.Put(name, rv)
+    }
+
+    // reset object pool to empty
+    if num > 0 {
+        c.objects = c.objects[:0]
+    }
 }
 
 // Next start running plugin chain
@@ -130,46 +134,67 @@ func (c *Context) Copy() *Context {
     cp.userData = nil
     cp.plugins = nil
     cp.index = MaxPlugins
+    cp.objects = nil
     return &cp
 }
 
-func (c *Context) SetInput(r *http.Request) {
-    c.input = r
-}
-
-func (c *Context) GetInput() *http.Request {
-    return c.input
-}
-
-func (c *Context) SetOutput(w http.ResponseWriter) {
-    c.output = w
-}
-
-func (c *Context) GetOutput() http.ResponseWriter {
-    return c.output
-}
-
+// GetElapseMs get elapsed ms since request start
 func (c *Context) GetElapseMs() int {
     elapse := time.Now().Sub(c.startTime)
     return int(elapse.Nanoseconds() / 1e6)
 }
 
+// GetLogId get log id of current context
 func (c *Context) GetLogId() string {
     return c.Logger.logId
 }
 
+// GetStatus get response status
+func (c *Context) GetStatus() int {
+    return c.response.status
+}
+
+// GetSize get response size
+func (c *Context) GetSize() int {
+    return c.response.size
+}
+
+// SetInput
+func (c *Context) SetInput(r *http.Request) {
+    c.input = r
+}
+
+// SetInput
+func (c *Context) GetInput() *http.Request {
+    return c.input
+}
+
+// SetOutput
+func (c *Context) SetOutput(w http.ResponseWriter) {
+    c.output = w
+}
+
+// GetOutput
+func (c *Context) GetOutput() http.ResponseWriter {
+    return c.output
+}
+
+// SetControllerId
 func (c *Context) SetControllerId(id string) {
     c.controllerId = id
 }
 
+// GetControllerId
 func (c *Context) GetControllerId() string {
     return c.controllerId
 }
 
+// SetActionId
 func (c *Context) SetActionId(id string) {
     c.actionId = id
 }
 
+// GetActionId
 func (c *Context) GetActionId() string {
     return c.actionId
 }
@@ -185,10 +210,8 @@ func (c *Context) SetUserData(key string, data interface{}) {
 
 // GetUserData get user data from current context
 func (c *Context) GetUserData(key string, dft interface{}) interface{} {
-    if nil != c.userData {
-        if data, ok := c.userData[key]; ok {
-            return data
-        }
+    if data, ok := c.userData[key]; ok {
+        return data
     }
 
     return dft

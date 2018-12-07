@@ -64,13 +64,3 @@ func (r *Response) ReadFrom(src io.Reader) (n int64, e error) {
     r.size += int(n)
     return
 }
-
-// Status get response status.
-func (r *Response) Status() int {
-    return r.status
-}
-
-// Size get num bytes that has written.
-func (r *Response) Size() int {
-    return r.size
-}

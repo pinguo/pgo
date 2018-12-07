@@ -22,7 +22,6 @@ const (
     ControllerWeb      = "Controller"
     ControllerCmd      = "Command"
     ConstructMethod    = "Construct"
-    DestructMethod     = "Destruct"
     InitMethod         = "Init"
     VendorPrefix       = "vendor/"
     VendorLength       = 7
@@ -30,6 +29,7 @@ const (
     ActionLength       = 6
     TraceMaxDepth      = 10
     MaxPlugins         = 32
+    MaxCacheObjects    = 100
 )
 
 var (
@@ -134,7 +134,7 @@ func CreateObject(class interface{}, params ...interface{}) interface{} {
     }
 
     if name := GetAlias(className); len(name) > 0 {
-        return App.GetContainer().Get(name, config, params...)
+        return App.GetContainer().Get(name, config, params...).Interface()
     }
 
     panic("unknown class: " + className)

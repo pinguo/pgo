@@ -25,7 +25,7 @@ import (
 //     httpsAddr: "0.0.0.0:8443"
 //     crtFile: "@app/conf/site.crt"
 //     keyFile: "@app/conf/site.key"
-//     maxHeaderBytes: 1024000
+//     maxHeaderBytes: 1048576
 //     readTimeout:   "30s"
 //     writeTimeout:  "30s"
 //     statsInterval: "60s"
@@ -35,9 +35,9 @@ type Server struct {
     httpsAddr string // address for https
     debugAddr string // address for pprof
 
-    crtFile         string // https certificate file
-    keyFile         string // https private key file
-    maxHeaderBytes  int
+    crtFile         string        // https certificate file
+    keyFile         string        // https private key file
+    maxHeaderBytes  int           // max http header bytes
     readTimeout     time.Duration // timeout for reading request
     writeTimeout    time.Duration // timeout for writing response
     statsInterval   time.Duration // interval for output server stats
@@ -385,13 +385,13 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, re
     }
 
     var controllerId, actionId string
-    di := App.GetContainer()
+    container := App.GetContainer()
 
     pos := strings.LastIndexByte(route, '/')
-    if pos > 0 && di.Has(s.getControllerName(route[:pos])) {
+    if pos > 0 && container.Has(s.getControllerName(route[:pos])) {
         controllerId = route[:pos]
         actionId = route[pos+1:]
-    } else if di.Has(s.getControllerName(route)) {
+    } else if container.Has(s.getControllerName(route)) {
         controllerId = route
         actionId = ""
     } else {
@@ -399,7 +399,7 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, re
     }
 
     controllerName := s.getControllerName(controllerId)
-    actions := di.GetInfo(controllerName).(map[string]int)
+    actions, _ := container.GetInfo(controllerName).(map[string]int)
 
     if len(actionId) > 0 {
         if _, ok := actions[actionId]; !ok {
@@ -420,7 +420,7 @@ func (s *Server) createController(route string, ctx *Context) (reflect.Value, re
     ctx.SetControllerId(controllerId)
     ctx.SetActionId(actionId)
 
-    controller := di.GetValue(controllerName, nil, ctx)
+    controller := container.Get(controllerName, nil, ctx)
     action := controller.Method(actions[actionId])
     return controller, action
 }
