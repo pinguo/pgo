@@ -6,11 +6,11 @@ import (
 )
 
 type bindItem struct {
-    pool   sync.Pool     // object pool
-    info   interface{}   // binding info
-    origin reflect.Value // origin value
-    cmIdx  int           // construct index
-    imIdx  int           // init index
+    pool  sync.Pool     // object pool
+    info  interface{}   // binding info
+    zero  reflect.Value // zero value
+    cmIdx int           // construct index
+    imIdx int           // init index
 }
 
 // Container the container component, configuration:
@@ -41,7 +41,7 @@ func (c *Container) Bind(i interface{}) {
 
     // initialize binding
     rt := iv.Elem().Type()
-    item := bindItem{origin: iv.Elem(), cmIdx: -1, imIdx: -1}
+    item := bindItem{zero: reflect.Zero(rt), cmIdx: -1, imIdx: -1}
     item.pool.New = func() interface{} { return reflect.New(rt) }
 
     // get binding info
@@ -88,7 +88,7 @@ func (c *Container) GetInfo(name string) interface{} {
 // GetType get class reflect type
 func (c *Container) GetType(name string) reflect.Type {
     if item, ok := c.items[name]; ok {
-        return item.origin.Type()
+        return item.zero.Type()
     }
 
     panic("Container: class not found, " + name)
@@ -105,13 +105,11 @@ func (c *Container) Get(name string, config map[string]interface{}, params ...in
     // get new object from pool
     rv := item.pool.Get().(reflect.Value)
 
-    // reset properties to origin
-    rv.Elem().Set(item.origin)
-
     if pl := len(params); pl > 0 {
         if ctx, ok := params[pl-1].(*Context); ok {
             if c.enablePool {
-                // cache object in context
+                // reset properties
+                rv.Elem().Set(item.zero)
                 ctx.cache(name, rv)
             }
 
