@@ -117,6 +117,8 @@ func (c *Container) Get(name string, config map[string]interface{}, params ...in
                 // inject context to object
                 obj.SetContext(ctx)
             }
+
+            params = params[:pl-1]
         }
     }
 
@@ -124,9 +126,8 @@ func (c *Container) Get(name string, config map[string]interface{}, params ...in
     if item.cmIdx != -1 {
         if cm := rv.Method(item.cmIdx); cm.IsValid() {
             in := make([]reflect.Value, 0)
-            np, na := len(params), cm.Type().NumIn()
-            for i := 0; i < np && i < na; i++ {
-                in = append(in, reflect.ValueOf(params[i]))
+            for _, arg := range params {
+                in = append(in, reflect.ValueOf(arg))
             }
 
             cm.Call(in)
