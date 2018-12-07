@@ -114,7 +114,7 @@ func (c *Container) Get(name string, config map[string]interface{}, params ...in
             }
 
             if obj, ok := rv.Interface().(IObject); ok {
-                // inject context to object
+                // inject context
                 obj.SetContext(ctx)
             }
 
