@@ -74,8 +74,8 @@ func (a *Adapter) Do(req *http.Request, option ...*Option) *http.Response {
 }
 
 // DoMulti perform multi requests concurrently
-func (a *Adapter) DoMulti(reqArr []*http.Request, option ...*Option) []*http.Response {
-    if optNum := len(option); optNum != 0 && optNum != len(reqArr) {
+func (a *Adapter) DoMulti(requests []*http.Request, option ...*Option) []*http.Response {
+    if num := len(option); num != 0 && num != len(requests) {
         panic("http multi request invalid num of options")
     }
 
@@ -85,36 +85,36 @@ func (a *Adapter) DoMulti(reqArr []*http.Request, option ...*Option) []*http.Res
     defer a.handlePanic()
 
     lock, wg := new(sync.Mutex), new(sync.WaitGroup)
-    resArr := make([]*http.Response, len(reqArr))
+    responses := make([]*http.Response, len(requests))
 
     fn := func(k int) {
-        defer func() {
-            recover()
-            wg.Done()
-        }()
-
-        start, profile := time.Now(), baseUrl(reqArr[k].URL.String())
+        start, profile := time.Now(), baseUrl(requests[k].URL.String())
         var res *http.Response
 
         defer func() {
+            if v := recover(); v != nil {
+                a.GetContext().Error(Util.ToString(v))
+            }
+
             lock.Lock()
             a.GetContext().ProfileAdd(profile, time.Since(start)/1e6)
-            resArr[k] = res
+            responses[k] = res
             lock.Unlock()
+            wg.Done()
         }()
 
         if len(option) > 0 && option[k] != nil {
-            res = a.client.Do(reqArr[k], option[k])
+            res = a.client.Do(requests[k], option[k])
         } else {
-            res = a.client.Do(reqArr[k])
+            res = a.client.Do(requests[k])
         }
     }
 
-    wg.Add(len(reqArr))
-    for k := range reqArr {
+    wg.Add(len(requests))
+    for k := range requests {
         go fn(k)
     }
 
     wg.Wait()
-    return resArr
+    return responses
 }

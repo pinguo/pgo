@@ -2,6 +2,7 @@ package Http
 
 import (
     "bytes"
+    "context"
     "crypto/tls"
     "fmt"
     "io"
@@ -26,12 +27,28 @@ type Client struct {
     verifyPeer bool          // verify https peer or not
     userAgent  string        // default User-Agent header
     timeout    time.Duration // default request timeout
+
+    client *http.Client
 }
 
 func (c *Client) Construct() {
     c.verifyPeer = false
     c.userAgent = defaultUserAgent
     c.timeout = defaultTimeout
+}
+
+func (c *Client) Init() {
+    // reused client and transport, transport will cache
+    // connections for future reuse, if transport created
+    // on demand, net poll goroutine on connection per
+    // transport will be leaked.
+    c.client = &http.Client{
+        Transport: &http.Transport{
+            TLSClientConfig: &tls.Config{
+                InsecureSkipVerify: !c.verifyPeer,
+            },
+        },
+    }
 }
 
 func (c *Client) SetVerifyPeer(verifyPeer bool) {
@@ -149,43 +166,30 @@ func (c *Client) Post(addr string, data interface{}, option ...*Option) *http.Re
 
 // Do perform a request specified by req param, and return response pointer.
 func (c *Client) Do(req *http.Request, option ...*Option) *http.Response {
-    timeout, verifyPeer := c.timeout, c.verifyPeer
-
     if c.userAgent != "" {
         req.Header.Set("User-Agent", c.userAgent)
     }
 
+    timeout := c.timeout
     if len(option) > 0 && option[0] != nil {
         opt := option[0]
         if opt.Timeout > 0 {
             timeout = opt.Timeout
         }
 
-        if len(opt.Header) > 0 {
-            for key, val := range opt.Header {
-                if len(val) > 0 {
-                    req.Header.Set(key, val[0])
-                }
+        for key, val := range opt.Header {
+            if len(val) > 0 {
+                req.Header.Set(key, val[0])
             }
         }
 
-        for len(opt.Cookies) > 0 {
-            for _, cookie := range opt.Cookies {
-                req.AddCookie(cookie)
-            }
+        for _, cookie := range opt.Cookies {
+            req.AddCookie(cookie)
         }
     }
 
-    client := http.Client{
-        Transport: &http.Transport{
-            TLSClientConfig: &tls.Config{
-                InsecureSkipVerify: !verifyPeer,
-            },
-        },
-        Timeout: timeout,
-    }
-
-    res, err := client.Do(req)
+    ctx, _ := context.WithTimeout(req.Context(), timeout)
+    res, err := c.client.Do(req.WithContext(ctx))
     if err != nil {
         panic("http request failed, " + err.Error())
     }

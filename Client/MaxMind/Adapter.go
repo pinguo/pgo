@@ -33,5 +33,4 @@ func (a *Adapter) GeoByIp(ip string, args ...interface{}) *Geo {
     defer a.GetContext().ProfileStop(profile)
 
     return a.client.GeoByIp(ip, args...)
-
 }
