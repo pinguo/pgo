@@ -8,7 +8,7 @@ import (
     "github.com/pinguo/pgo"
 )
 
-// Stmt wrap sql.Stmt for purpose
+// Stmt wrap sql.Stmt, add context support
 type Stmt struct {
     pgo.Object
     stmt   *sql.Stmt

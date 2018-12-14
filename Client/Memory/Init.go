@@ -7,6 +7,8 @@ import (
 )
 
 const (
+    AdapterClass = "@pgo/Client/Memory/Adapter"
+
     defaultComponentId = "memory"
     defaultGcMaxItems  = 1000
     defaultGcInterval  = 60 * time.Second

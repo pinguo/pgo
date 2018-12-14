@@ -8,6 +8,8 @@ import (
 )
 
 const (
+    AdapterClass = "@pgo/Client/Db/Adapter"
+
     defaultComponentId = "db"
     defaultTimeout     = 10 * time.Second
 )

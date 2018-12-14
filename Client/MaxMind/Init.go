@@ -3,11 +3,12 @@ package MaxMind
 import "github.com/pinguo/pgo"
 
 const (
-    DBCountry = 0
-    DBCity    = 1
+    DBCountry    = 0
+    DBCity       = 1
+    AdapterClass = "@pgo/Client/MaxMind/Adapter"
 
-    defaultLang        = "en"
     defaultComponentId = "maxMind"
+    defaultLang        = "en"
 )
 
 func init() {

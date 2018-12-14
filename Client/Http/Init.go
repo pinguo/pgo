@@ -8,6 +8,8 @@ import (
 )
 
 const (
+    AdapterClass = "@pgo/Client/Http/Adapter"
+
     defaultComponentId = "http"
     defaultUserAgent   = "PGO Framework"
     defaultTimeout     = 10 * time.Second

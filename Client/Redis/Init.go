@@ -7,8 +7,10 @@ import (
 )
 
 const (
-    defaultServer      = "127.0.0.1:6379"
+    AdapterClass = "@pgo/Client/Redis/Adapter"
+
     defaultComponentId = "redis"
+    defaultServer      = "127.0.0.1:6379"
     defaultPrefix      = "pgo_"
     defaultPassword    = ""
     defaultDb          = 0

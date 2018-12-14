@@ -7,8 +7,10 @@ import (
 )
 
 const (
-    defaultServer      = "127.0.0.1:11211"
+    AdapterClass = "@pgo/Client/Memcache/Adapter"
+
     defaultComponentId = "memcache"
+    defaultServer      = "127.0.0.1:11211"
     defaultPrefix      = "pgo_"
     defaultProbe       = 0
     defaultIdleConn    = 10

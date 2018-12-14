@@ -10,14 +10,14 @@ import (
 
 // DB client component, wrapper for database/sql,
 // support read-write splitting, configuration:
-// "db": {
-//     "driver": "mysql",
-//     "dsn": "user:pass@tcp(127.0.0.1:3306)/db?charset=utf8&timeout=0.5s",
-//     "slaves": ["slave1 dsn", "slave2 dsn"],
-//     "maxIdleConn": 5,
-//     "maxConnTime": "1h",
-//     "slowLogTime": "100ms"
-// }
+// db:
+//     class:  "@pgo/Client/Db/Client"
+//     driver: "mysql"
+//     dsn:    "user:pass@tcp(127.0.0.1:3306)/db?charset=utf8&timeout=0.5s"
+//     slaves: ["slave1 dsn", "slave2 dsn"]
+//     maxIdleConn: 5
+//     maxConnTime: "1h"
+//     slowLogTime: "100ms"
 type Client struct {
     driver string   // driver name
     dsn    string   // master dsn
@@ -110,7 +110,7 @@ func (c *Client) GetDb(master bool) *sql.DB {
     if num := len(c.slaveDbs); !master && num > 0 {
         idx := 0
         if num > 1 {
-            idx = time.Now().Nanosecond() % num
+            idx = (time.Now().Nanosecond() / 1000) % num
         }
 
         return c.slaveDbs[idx]
