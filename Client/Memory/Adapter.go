@@ -8,7 +8,7 @@ import (
 )
 
 // Adapter of Memory Client, add context support.
-// usage: memory := this.GetObject("@pgo/Client/Memory/Adapter").(*Adapter)
+// usage: memory := this.GetObject(Memory.AdapterClass).(*Memory.Adapter)
 type Adapter struct {
     pgo.Object
     client       *Client

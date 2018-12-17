@@ -27,12 +27,10 @@ type Geo struct {
 }
 
 // MaxMind Client component, configuration:
-// "maxMind": {
-//     "class": "@pgo/Client/MaxMind/Client",
-//     "countryFile": "@app/../geoip/GeoLite2-Country.mmdb",
-//     "cityFile": "@app/../geoip/GeoLite2-City.mmdb"
-// }
-// usage: geo := pgo.App.Get(<componentId>).(*Client).GeoByIp("xx.xx.xx.xx")
+// maxMind:
+//     class: "@pgo/Client/MaxMind/Client"
+//     countryFile: "@app/../geoip/GeoLite2-Country.mmdb"
+//     cityFile: "@app/../geoip/GeoLite2-City.mmdb"
 type Client struct {
     readers [2]*maxminddb.Reader
 }

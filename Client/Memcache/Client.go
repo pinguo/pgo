@@ -9,18 +9,16 @@ import (
 )
 
 // Memcache Client component, configuration:
-// "memcache": {
-//     "class": "@pgo/Client/Memcache/Client",
-//     "prefix": "pgo_",
-//     "maxIdleConn": 10,
-//     "maxIdleTime": "60s",
-//     "netTimeout": "1s",
-//     "probInterval": "0s",
-//     "servers": [
-//         "127.0.0.1:11211",
-//         "127.0.0.1:11212"
-//     ]
-// }
+// memcache:
+//     class: "@pgo/Client/Memcache/Client"
+//     prefix: "pgo_"
+//     maxIdleConn: 10
+//     maxIdleTime: "60s"
+//     netTimeout: "1s"
+//     probInterval: "0s"
+//     servers:
+//         - "127.0.0.1:11211"
+//         - "127.0.0.1:11212"
 type Client struct {
     Pool
 }

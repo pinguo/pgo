@@ -8,7 +8,7 @@ import (
 )
 
 // Adapter of Redis Client, add context support.
-// usage: redis := this.GetObject("@pgo/Client/Redis/Adapter").(*Adapter)
+// usage: redis := this.GetObject(Redis.AdapterClass).(*Redis.Adapter)
 type Adapter struct {
     pgo.Object
     client       *Client

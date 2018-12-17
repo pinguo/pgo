@@ -17,12 +17,11 @@ import (
 )
 
 // Http Client component, configuration:
-// "http": {
-//     "class": "@pgo/Client/Http/Client",
-//     "verifyPeer": false,
-//     "userAgent": "PGO Framework",
-//     "timeout": "10s"
-// }
+// http:
+//     class: "@pgo/Client/Http/Client"
+//     verifyPeer: false
+//     userAgent: "PGO Framework"
+//     timeout: "10s"
 type Client struct {
     verifyPeer bool          // verify https peer or not
     userAgent  string        // default User-Agent header

@@ -19,11 +19,10 @@ func (i item) isExpired() bool {
 }
 
 // Memory Client component, configuration:
-// "memory": {
-//     "class": "@pgo/Client/Memory/Client",
-//     "gcInterval": "60s",
-//     "gcMaxItems": 1000
-// }
+// memory:
+//     class: "@pgo/Client/Memory/Client"
+//     gcInterval: "60s"
+//     gcMaxItems: 1000
 type Client struct {
     lock       sync.RWMutex
     items      map[string]*item

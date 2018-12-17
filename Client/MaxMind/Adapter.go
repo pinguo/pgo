@@ -5,7 +5,7 @@ import (
 )
 
 // Adapter of MaxMind Client, add context support.
-// usage: mmd := this.GetObject("@pgo/Client/MaxMind/Adapter").(*Adapter)
+// usage: mmd := this.GetObject(MaxMind.AdapterClass).(*MaxMind.Adapter)
 type Adapter struct {
     pgo.Object
     client *Client

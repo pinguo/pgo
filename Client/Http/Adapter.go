@@ -10,7 +10,7 @@ import (
 )
 
 // Adapter of Http Client, add context support.
-// usage: http := this.GetObject("@pgo/Client/Http/Adapter").(*Adapter)
+// usage: http := this.GetObject(Http.AdapterClass).(*Http.Adapter)
 type Adapter struct {
     pgo.Object
     client       *Client

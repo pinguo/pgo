@@ -11,20 +11,18 @@ import (
 
 // Redis Client component, require redis-server 2.6.12+
 // configuration:
-// "redis": {
-//     "class": "@pgo/Client/Redis/Client",
-//     "prefix": "pgo_",
-//     "password": "",
-//     "db": 0,
-//     "maxIdleConn": 10,
-//     "maxIdleTime": "60s",
-//     "netTimeout": "1s",
-//     "probInterval": "0s",
-//     "servers": [
-//         "127.0.0.1:6379",
-//         "127.0.0.1:6380"
-//     ]
-// }
+// redis:
+//     class: "@pgo/Client/Redis/Client"
+//     prefix: "pgo_"
+//     password: ""
+//     db: 0
+//     maxIdleConn: 10
+//     maxIdleTime: "60s"
+//     netTimeout: "1s"
+//     probInterval: "0s"
+//     servers:
+//         - "127.0.0.1:6379"
+//         - "127.0.0.1:6380"
 type Client struct {
     Pool
 }

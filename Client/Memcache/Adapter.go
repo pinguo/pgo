@@ -8,7 +8,7 @@ import (
 )
 
 // Adapter of Memcache Client, add context support.
-// usage: mc := this.GetObject("@pgo/Client/Memcache/Adapter").(*Adapter)
+// usage: mc := this.GetObject(Memcache.AdapterClass.(*Memcache.Adapter)
 type Adapter struct {
     pgo.Object
     client       *Client
