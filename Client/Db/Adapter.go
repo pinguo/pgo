@@ -10,7 +10,7 @@ import (
 )
 
 // Adapter of Db Client, add context support.
-// usage: db := this.GetObject("@pgo/Client/Db/Adapter").(*Adapter)
+// usage: db := this.GetObject(Db.AdapterClass).(*Db.Adapter)
 type Adapter struct {
     pgo.Object
     client *Client
@@ -32,7 +32,7 @@ func (a *Adapter) GetClient() *Client {
 }
 
 func (a *Adapter) GetDb(master bool) *sql.DB {
-    // reuse previous db instance for slave
+    // reuse previous db instance for read
     if !master && a.db != nil {
         return a.db
     }
@@ -42,7 +42,7 @@ func (a *Adapter) GetDb(master bool) *sql.DB {
 }
 
 // Begin start a transaction with default timeout context and optional opts,
-// if opts is nil, default option will be used.
+// if opts is nil, default driver option will be used.
 func (a *Adapter) Begin(opts ...*sql.TxOptions) bool {
     opts = append(opts, nil)
     ctx, _ := context.WithTimeout(context.Background(), defaultTimeout)
@@ -50,7 +50,7 @@ func (a *Adapter) Begin(opts ...*sql.TxOptions) bool {
 }
 
 // BeginContext start a transaction with specified context and optional opts,
-// if opts is nil, default option will be used.
+// if opts is nil, default driver option will be used.
 func (a *Adapter) BeginContext(ctx context.Context, opts *sql.TxOptions) bool {
     if tx, e := a.GetDb(true).BeginTx(ctx, opts); e != nil {
         a.GetContext().Error("Db.Begin error, " + e.Error())
@@ -92,6 +92,45 @@ func (a *Adapter) Rollback() bool {
 // InTransaction check if adapter is in transaction.
 func (a *Adapter) InTransaction() bool {
     return a.tx != nil
+}
+
+// QueryOne perform one row query using a default timeout context,
+// and always returns a non-nil value, Errors are deferred until
+// Row's Scan method is called.
+func (a *Adapter) QueryOne(query string, args ...interface{}) *Row {
+    ctx, _ := context.WithTimeout(context.Background(), defaultTimeout)
+    return a.QueryOneContext(ctx, query, args...)
+}
+
+// QueryOneContext perform one row query using a specified context,
+// and always returns a non-nil value, Errors are deferred until
+// Row's Scan method is called.
+func (a *Adapter) QueryOneContext(ctx context.Context, query string, args ...interface{}) *Row {
+    start := time.Now()
+    defer func() {
+        elapse := time.Since(start)
+        a.GetContext().ProfileAdd("Db.QueryOne", elapse)
+
+        if elapse >= a.client.slowLogTime && a.client.slowLogTime > 0 {
+            a.GetContext().Warn("Db.QueryOne slow, elapse:%s, query:%s, args:%v", elapse, query, args)
+        }
+    }()
+
+    var row *sql.Row
+    if a.tx != nil {
+        row = a.tx.QueryRowContext(ctx, query, args...)
+    } else {
+        row = a.GetDb(false).QueryRowContext(ctx, query, args...)
+    }
+
+    // wrap row for profile purpose
+    rowWrapper := rowPool.Get().(*Row)
+    rowWrapper.SetContext(a.GetContext())
+    rowWrapper.row = row
+    rowWrapper.query = query
+    rowWrapper.args = args
+
+    return rowWrapper
 }
 
 // Query perform query using a default timeout context.

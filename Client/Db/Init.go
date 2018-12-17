@@ -14,7 +14,10 @@ const (
     defaultTimeout     = 10 * time.Second
 )
 
-var stmtPool sync.Pool
+var (
+    stmtPool sync.Pool
+    rowPool  sync.Pool
+)
 
 func init() {
     container := pgo.App.GetContainer()
@@ -22,7 +25,6 @@ func init() {
     container.Bind(&Adapter{})
     container.Bind(&Client{})
 
-    stmtPool.New = func() interface{} {
-        return &Stmt{}
-    }
+    stmtPool.New = func() interface{} { return &Stmt{} }
+    rowPool.New = func() interface{} { return &Row{} }
 }
