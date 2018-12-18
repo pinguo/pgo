@@ -87,6 +87,7 @@ glide update            # 更新依赖包
 
 ## 快速开始
 1. 拷贝makefile
+    
     非IDE环境(命令行)下，推荐使用make做为编译打包的控制工具，从[pgo](https://github.com/pinguo/pgo)或[pgo-demo](https://github.com/pinguo/pgo-demo)工程下将makefile复制到项目目录下。
     ```sh
     make start	# 编译并运行当前工程
