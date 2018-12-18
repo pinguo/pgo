@@ -31,7 +31,7 @@ go-pgo | 33902 | 2.842 | 64%
 ## 环境要求
 - GO 1.10+
 - Make 3.8+
-- Linux/MacOS
+- Linux/MacOS/Cygwin
 - Glide 0.13+ (建议)
 - GoLand 2018 (建议)
 
