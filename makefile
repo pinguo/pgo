@@ -35,6 +35,9 @@ update:
 update-all:
 	export GOPATH=$(baseDir) && cd $(srcDir) && $(glideBin) update
 
+install:
+	export GOPATH=$(baseDir) && cd $(srcDir) && $(glideBin) install
+
 pgo:
 	export GOPATH=$(baseDir) && cd $(srcDir) && $(glideBin) get github.com/pinguo/pgo
 
@@ -57,5 +60,6 @@ help:
 	@echo "make build       build $(binName)"
 	@echo "make update      glide update, only packages in glide.yaml"
 	@echo "make update-all  glide update, all packages recursively"
+	@echo "make install     glide install packages in glide.lock"
 	@echo "make pgo         glide get pgo"
 	@echo "make init        init project"
