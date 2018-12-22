@@ -30,6 +30,9 @@ build:
 	export GOPATH=$(baseDir) && $(goBin) build -o $(binDir)/$(binName) $(srcDir)/Main/main.go
 
 update:
+	export GOPATH=$(baseDir) && cd $(srcDir) && $(glideBin) update --no-recursive
+
+update-all:
 	export GOPATH=$(baseDir) && cd $(srcDir) && $(glideBin) update
 
 pgo:
@@ -49,9 +52,10 @@ init:
 	@[ -f $(srcDir)/glide.yaml ] || (cd $(srcDir) && echo Y | $(glideBin) init)
 
 help:
-	@echo "make start    start $(binName)"
-	@echo "make stop     stop $(binName)"
-	@echo "make build    build $(binName)"
-	@echo "make update   glide update"
-	@echo "make pgo      glide get pgo"
-	@echo "make init     init project"
+	@echo "make start       build and start $(binName)"
+	@echo "make stop        stop process $(binName)"
+	@echo "make build       build $(binName)"
+	@echo "make update      glide update, only packages in glide.yaml"
+	@echo "make update-all  glide update, all packages recursively"
+	@echo "make pgo         glide get pgo"
+	@echo "make init        init project"
