@@ -42,17 +42,17 @@ pgo:
 	export GOPATH=$(baseDir) && cd $(srcDir) && $(glideBin) get github.com/pinguo/pgo
 
 init:
-	@[ -d $(baseDir)/conf ] || mkdir $(baseDir)/conf
-	@[ -d $(srcDir) ] || mkdir $(srcDir)
-	@[ -d $(srcDir)/Command ] || mkdir $(srcDir)/Command
-	@[ -d $(srcDir)/Controller ] || mkdir $(srcDir)/Controller
-	@[ -d $(srcDir)/Lib ] || mkdir $(srcDir)/Lib
-	@[ -d $(srcDir)/Main ] || mkdir $(srcDir)/Main
-	@[ -d $(srcDir)/Model ] || mkdir $(srcDir)/Model
-	@[ -d $(srcDir)/Service ] || mkdir $(srcDir)/Service
-	@[ -d $(srcDir)/Struct ] || mkdir $(srcDir)/Struct
-	@[ -d $(srcDir)/Test ] || mkdir $(srcDir)/Test
-	@[ -f $(srcDir)/glide.yaml ] || (cd $(srcDir) && echo Y | $(glideBin) init)
+	[ -d $(baseDir)/conf ] || mkdir $(baseDir)/conf
+	[ -d $(srcDir) ] || mkdir $(srcDir)
+	[ -d $(srcDir)/Command ] || mkdir $(srcDir)/Command
+	[ -d $(srcDir)/Controller ] || mkdir $(srcDir)/Controller
+	[ -d $(srcDir)/Lib ] || mkdir $(srcDir)/Lib
+	[ -d $(srcDir)/Main ] || mkdir $(srcDir)/Main
+	[ -d $(srcDir)/Model ] || mkdir $(srcDir)/Model
+	[ -d $(srcDir)/Service ] || mkdir $(srcDir)/Service
+	[ -d $(srcDir)/Struct ] || mkdir $(srcDir)/Struct
+	[ -d $(srcDir)/Test ] || mkdir $(srcDir)/Test
+	[ -f $(srcDir)/glide.yaml ] || (cd $(srcDir) && echo Y | $(glideBin) init)
 
 help:
 	@echo "make start       build and start $(binName)"
