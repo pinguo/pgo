@@ -93,8 +93,7 @@ glide update            # 更新依赖包
     make start      # 编译并运行当前工程
     make stop       # 停止当前工程的进程
     make build      # 仅编译当前工程
-    make update     # 更新glide依赖(仅更新glide.yaml中的包)
-    make update-all # 更新glide依赖(递归更新依赖的依赖包)
+    make update     # 更新glide依赖(递归更新)
     make install    # 安装glide.lock文件锁定的依赖包
     make pgo        # 安装pgo框架到当前工程
     make init       # 初始化工程目录

@@ -30,9 +30,6 @@ build:
 	export GOPATH=$(baseDir) && $(goBin) build -o $(binDir)/$(binName) $(srcDir)/Main/main.go
 
 update:
-	export GOPATH=$(baseDir) && cd $(srcDir) && $(glideBin) update --no-recursive
-
-update-all:
 	export GOPATH=$(baseDir) && cd $(srcDir) && $(glideBin) update
 
 install:
@@ -58,8 +55,7 @@ help:
 	@echo "make start       build and start $(binName)"
 	@echo "make stop        stop process $(binName)"
 	@echo "make build       build $(binName)"
-	@echo "make update      glide update, only packages in glide.yaml"
-	@echo "make update-all  glide update, all packages recursively"
+	@echo "make update      glide update packages recursively"
 	@echo "make install     glide install packages in glide.lock"
 	@echo "make pgo         glide get pgo"
 	@echo "make init        init project"
