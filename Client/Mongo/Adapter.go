@@ -276,8 +276,8 @@ func (a *Adapter) DeleteAll(query interface{}) error {
     return e
 }
 
-// Count return the count of documents in collection.
-func (a *Adapter) Count() int {
+// Count return the count of documents match the query.
+func (a *Adapter) Count(query interface{}, options ...bson.M) (int, error) {
     profile := "Mongo.Count"
     a.GetContext().ProfileStart(profile)
     defer a.GetContext().ProfileStop(profile)
@@ -285,12 +285,15 @@ func (a *Adapter) Count() int {
     session := a.client.GetSession()
     defer session.Close()
 
-    n, e := session.DB(a.db).C(a.coll).Count()
+    q := session.DB(a.db).C(a.coll).Find(query)
+    a.applyQueryOptions(q, options)
+
+    n, e := q.Count()
     if e != nil {
         a.GetContext().Error(profile + " error, " + e.Error())
     }
 
-    return n
+    return n, e
 }
 
 // PipeOne execute aggregation queries and get the first item from result set.
