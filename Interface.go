@@ -23,7 +23,7 @@ type IPlugin interface {
 }
 
 type IEvent interface {
-    HandleEvent(ctx *Context, args ...interface{})
+    HandleEvent(event string, ctx *Context, args ...interface{})
 }
 
 type IFormatter interface {
