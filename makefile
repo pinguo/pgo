@@ -32,26 +32,30 @@ build:
 update:
 	export GOPATH=$(baseDir) && cd $(srcDir) && $(glideBin) update
 
+install:
+	export GOPATH=$(baseDir) && cd $(srcDir) && $(glideBin) install
+
 pgo:
 	export GOPATH=$(baseDir) && cd $(srcDir) && $(glideBin) get github.com/pinguo/pgo
 
 init:
-	@[ -d $(baseDir)/conf ] || mkdir $(baseDir)/conf
-	@[ -d $(srcDir) ] || mkdir $(srcDir)
-	@[ -d $(srcDir)/Command ] || mkdir $(srcDir)/Command
-	@[ -d $(srcDir)/Controller ] || mkdir $(srcDir)/Controller
-	@[ -d $(srcDir)/Lib ] || mkdir $(srcDir)/Lib
-	@[ -d $(srcDir)/Main ] || mkdir $(srcDir)/Main
-	@[ -d $(srcDir)/Model ] || mkdir $(srcDir)/Model
-	@[ -d $(srcDir)/Service ] || mkdir $(srcDir)/Service
-	@[ -d $(srcDir)/Struct ] || mkdir $(srcDir)/Struct
-	@[ -d $(srcDir)/Test ] || mkdir $(srcDir)/Test
-	@[ -f $(srcDir)/glide.yaml ] || (cd $(srcDir) && echo Y | $(glideBin) init)
+	[ -d $(baseDir)/conf ] || mkdir $(baseDir)/conf
+	[ -d $(srcDir) ] || mkdir $(srcDir)
+	[ -d $(srcDir)/Command ] || mkdir $(srcDir)/Command
+	[ -d $(srcDir)/Controller ] || mkdir $(srcDir)/Controller
+	[ -d $(srcDir)/Lib ] || mkdir $(srcDir)/Lib
+	[ -d $(srcDir)/Main ] || mkdir $(srcDir)/Main
+	[ -d $(srcDir)/Model ] || mkdir $(srcDir)/Model
+	[ -d $(srcDir)/Service ] || mkdir $(srcDir)/Service
+	[ -d $(srcDir)/Struct ] || mkdir $(srcDir)/Struct
+	[ -d $(srcDir)/Test ] || mkdir $(srcDir)/Test
+	[ -f $(srcDir)/glide.yaml ] || (cd $(srcDir) && echo Y | $(glideBin) init)
 
 help:
-	@echo "make start    start $(binName)"
-	@echo "make stop     stop $(binName)"
-	@echo "make build    build $(binName)"
-	@echo "make update   glide update"
-	@echo "make pgo      glide get pgo"
-	@echo "make init     init project"
+	@echo "make start       build and start $(binName)"
+	@echo "make stop        stop process $(binName)"
+	@echo "make build       build $(binName)"
+	@echo "make update      glide update packages recursively"
+	@echo "make install     glide install packages in glide.lock"
+	@echo "make pgo         glide get pgo"
+	@echo "make init        init project"
