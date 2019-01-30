@@ -128,7 +128,7 @@ glide update            # 更新依赖包
                     class: "@pgo/FileTarget"
                     levels: "WARN,ERROR,FATAL"
                     filePath: "@runtime/error.log"
-                console: {
+                console: 
                     class: "@pgo/ConsoleTarget"
                     levels: "ALL"
     ```
@@ -136,14 +136,59 @@ glide update            # 更新依赖包
 4. 安装PGO(以下两种方法均可)
     - 在项目根目录执行`make pgo`安装PGO
     - 在项目根目录执行`export GOPATH=$(pwd) && cd src && glide get github.com/pinguo/pgo`
+5. 创建Service(src/Service/Welcome.go)
+    ```go
+    package Service
 
-5. 创建控制器(src/Controller/WelcomeController.go)
+    import (
+        "fmt"
+
+        "github.com/pinguo/pgo"
+    )
+
+    type Welcome struct {
+        pgo.Object
+    }
+
+    // 框架自动调用的构造函数(可选)
+    func (w *Welcome) Construct() {
+        fmt.Printf("call in Service/Welcome.Construct\n")
+    }
+
+    // 框架自动调用的初始函数(可选)
+    func (w *Welcome) Init() {
+        fmt.Printf("call in Service/Welcome.Init\n")
+    }
+
+    func (w *Welcome) SayHello(name string, age int, sex string) {
+        fmt.Printf("call in  Service/Welcome.SayHello, name:%s age:%d sex:%s\n", name, age, sex)
+    }
+    ```
+6. 注册Service(src/Service/Init.go)
+    
+    ```go
+    package Service
+
+    import "github.com/pinguo/pgo"
+
+    func init() {
+        container := pgo.App.GetContainer()
+
+        // 注册类
+        container.Bind(&Welcome{})
+
+        // 除控制器目录外，其它包的init函数中应该只注册该包的类，
+        // 而不应该包含子包。
+    }
+
+    ```
+7. 创建控制器(src/Controller/WelcomeController.go)
     ```go
     package Controller
 
     import (
+        "Service"
         "net/http"
-        "time"
      
         "github.com/pinguo/pgo"
     )
@@ -208,7 +253,7 @@ glide update            # 更新依赖包
         w.GetContext().End(http.StatusOK, []byte("call restfull GET"))
     }
     ```
-6. 注册控制器(src/Controller/Init.go)
+8. 注册控制器(src/Controller/Init.go)
     ```go
     package Controller
 
@@ -219,7 +264,7 @@ glide update            # 更新依赖包
         container.Bind(&WelcomeController{})
     }
     ```
-7. 创建程序入口(src/Main/main.go)
+9. 创建程序入口(src/Main/main.go)
     ```go
     package main
 
@@ -233,7 +278,7 @@ glide update            # 更新依赖包
         pgo.Run() // 运行程序
     }
     ```
-8. 编译运行
+10. 编译运行
     ```sh
     make start
     curl http://127.0.0.1:8000/welcome
