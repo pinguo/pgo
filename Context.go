@@ -491,5 +491,6 @@ func (c *Context) End(status int, data []byte) {
         c.output.Write(data)
     } else if len(data) > 0 {
         os.Stdout.Write(data)
+        os.Stdout.WriteString("\n")
     }
 }
