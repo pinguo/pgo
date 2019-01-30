@@ -135,7 +135,7 @@ glide update            # 更新依赖包
 
 4. 安装PGO(以下两种方法均可)
     - 在项目根目录执行`make pgo`安装PGO
-    - 在项目根目录执行`export GOPATH=$(pwd) && cd src && glide get github.com/pinguo/pgo`
+    - 在项目根目录执行`export GOPATH=$GOPATH:$(pwd) && cd src && glide get github.com/pinguo/pgo && glide update`
 5. 创建Service(src/Service/Welcome.go)
     ```go
     package Service
@@ -280,6 +280,7 @@ glide update            # 更新依赖包
     ```
 10. 编译运行
     ```sh
+    
     make start
     curl http://127.0.0.1:8000/welcome
     ```
