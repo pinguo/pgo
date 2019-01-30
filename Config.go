@@ -35,6 +35,8 @@ func (c *Config) Construct() {
     envPath := filepath.Join(confPath, App.GetEnv())
     if f, _ := os.Stat(envPath); f != nil && f.IsDir() {
         c.paths = append(c.paths, envPath)
+    } else if App.GetEnv() != DefaultEnv {
+        panic("Config: invalid env path, " + envPath)
     }
 
     c.AddParser("json", &JsonConfigParser{})
