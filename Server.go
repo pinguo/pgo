@@ -44,10 +44,10 @@ type Server struct {
     enableAccessLog bool
     pluginNames     []string
 
-    numReq  uint64         // request num handled
-    plugins []IPlugin      // server plugin list
-    servers []*http.Server // http server list
-    pool    sync.Pool      // context pool
+    numReq          uint64         // request num handled
+    plugins         []IPlugin      // server plugin list
+    servers         []*http.Server // http server list
+    pool            sync.Pool      // context pool
     maxPostBodySize int64          //max post body size
 }
 
@@ -56,6 +56,7 @@ func (s *Server) Construct() {
     s.readTimeout = DefaultTimeout
     s.writeTimeout = DefaultTimeout
     s.statsInterval = 60 * time.Second
+    s.maxPostBodySize = 1024000000
     s.enableAccessLog = true
     s.pluginNames = []string{"gzip"}
     s.pool.New = func() interface{} {
@@ -205,6 +206,11 @@ func (s *Server) ServeCMD() {
 // ServeHTTP serve http request
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     r.Body = http.MaxBytesReader(w, r.Body, s.maxPostBodySize)
+    fmt.Println("ContentLength:", r.ContentLength, "||||", s.maxPostBodySize)
+    err := r.ParseForm()
+    if err != nil {
+        fmt.Println(err)
+    }
     // increase request num
     atomic.AddUint64(&s.numReq, 1)
     ctx := s.pool.Get().(*Context)
