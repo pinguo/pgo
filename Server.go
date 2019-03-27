@@ -56,6 +56,7 @@ func (s *Server) Construct() {
     s.readTimeout = DefaultTimeout
     s.writeTimeout = DefaultTimeout
     s.statsInterval = 60 * time.Second
+    s.maxPostBodySize = 10240000
     s.enableAccessLog = true
     s.pluginNames = []string{"gzip"}
     s.pool.New = func() interface{} {
