@@ -48,7 +48,7 @@ type Server struct {
     plugins []IPlugin      // server plugin list
     servers []*http.Server // http server list
     pool    sync.Pool      // context pool
-    maxPostBodySize int64          //max post body size
+    maxPostBodySize int64  // max post body size
 }
 
 func (s *Server) Construct() {
@@ -92,6 +92,11 @@ func (s *Server) SetKeyFile(keyFile string) {
 // SetMaxHeaderBytes set max header bytes
 func (s *Server) SetMaxHeaderBytes(maxBytes int) {
     s.maxHeaderBytes = maxBytes
+}
+
+// SetMaxPostBodySize set max header bytes
+func (s *Server) SetMaxPostBodySize(maxBytes int64) {
+   s.maxPostBodySize = maxBytes
 }
 
 // SetReadTimeout set timeout to read request
@@ -204,7 +209,10 @@ func (s *Server) ServeCMD() {
 
 // ServeHTTP serve http request
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    r.Body = http.MaxBytesReader(w, r.Body, s.maxPostBodySize)
+    // Change the maxPostBodySize
+    if s.maxPostBodySize > 0 {
+        r.Body = http.MaxBytesReader(w, r.Body, s.maxPostBodySize)
+    }
     // increase request num
     atomic.AddUint64(&s.numReq, 1)
     ctx := s.pool.Get().(*Context)
