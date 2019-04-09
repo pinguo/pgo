@@ -45,6 +45,7 @@ type Application struct {
     status     *Status
     i18n       *I18n
     view       *View
+    stopBefore *StopBefore // 服务停止前执行 [{"obj":"func"}]
 }
 
 func (app *Application) Construct() {
@@ -60,6 +61,7 @@ func (app *Application) Construct() {
     app.container = &Container{}
     app.server = &Server{}
     app.components = make(map[string]interface{})
+    app.stopBefore = &StopBefore{}
 }
 
 func (app *Application) Init() {
@@ -232,6 +234,11 @@ func (app *Application) GetView() *View {
     }
 
     return app.view
+}
+
+// GetStopBefore get stopBefore component
+func (app *Application) GetStopBefore() *StopBefore{
+    return app.stopBefore
 }
 
 // Get get component by id

@@ -30,6 +30,7 @@ import (
 //     writeTimeout:  "30s"
 //     statsInterval: "60s"
 //     enableAccessLog: true
+//     maxPostBodySize: 1048576
 type Server struct {
     httpAddr  string // address for http
     httpsAddr string // address for https
@@ -175,6 +176,8 @@ func (s *Server) GetStats() *ServerStats {
 func (s *Server) Serve() {
     // flush log when app end
     defer App.GetLog().Flush()
+    // exec stopBefore when app end
+    defer App.GetStopBefore().Exec()
 
     // initialize plugins
     s.initPlugins()
