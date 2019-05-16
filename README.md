@@ -280,7 +280,7 @@ glide update            # 更新依赖包
     ```
 10. 编译运行
     ```sh
-    
+    make update
     make start
     curl http://127.0.0.1:8000/welcome
     ```
