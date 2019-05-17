@@ -2,11 +2,13 @@ package Redis
 
 import (
     "bytes"
+    "strings"
     "sync"
     "sync/atomic"
     "time"
 
     "github.com/pinguo/pgo"
+    "github.com/pinguo/pgo/Util"
 )
 
 // Redis Client component, require redis-server 2.6.12+
@@ -20,6 +22,7 @@ import (
 //     maxIdleTime: "60s"
 //     netTimeout: "1s"
 //     probInterval: "0s"
+//     mod:"cluster"
 //     servers:
 //         - "127.0.0.1:6379"
 //         - "127.0.0.1:6380"
@@ -164,4 +167,29 @@ func (c *Client) mset(items map[string]interface{}, expire time.Duration, flag s
 
     wg.Wait()
     return success == uint32(len(items))
+}
+
+// args = [0:"key"]
+func (c *Client) Do(cmd string, args ...interface{}) interface{} {
+    if len(args) == 0 {
+        panic("The length of args has to be greater than 1")
+    }
+
+    key,ok:=args[0].(string)
+    if ok == false {
+        panic("Invalid key string:" + Util.ToString(args[0]))
+    }
+
+    cmd = strings.ToUpper(cmd)
+    if Util.SliceSearchString(allRedisCms,cmd) == -1 {
+        panic("Undefined command:" + cmd)
+    }
+
+    newKey := c.BuildKey(key)
+    conn := c.GetConnByKey(newKey)
+    defer conn.Close(false)
+
+    args[0] = newKey
+
+    return conn.Do(cmd, args ...)
 }

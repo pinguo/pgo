@@ -144,3 +144,12 @@ func (a *Adapter) Incr(key string, delta int) int {
 
     return a.client.Incr(key, delta)
 }
+
+// args = [0:"key"]
+func (a *Adapter) Do(cmd string, args ... interface{} ) interface{}{
+    profile := "Redis.Do." + cmd
+    a.GetContext().ProfileStart(profile)
+    defer a.GetContext().ProfileStop(profile)
+    defer a.handlePanic()
+    return a.client.Do(cmd, args ...)
+}
