@@ -34,6 +34,7 @@ type Pool struct {
     maxIdleTime   time.Duration
     netTimeout    time.Duration
     probeInterval time.Duration
+    mod           string
 }
 
 func (p *Pool) Construct() {
@@ -48,6 +49,7 @@ func (p *Pool) Construct() {
     p.maxIdleTime = defaultIdleTime
     p.netTimeout = defaultTimeout
     p.probeInterval = defaultProbe
+    p.mod = ModCluster
 }
 
 func (p *Pool) Init() {
@@ -132,6 +134,14 @@ func (p *Pool) SetProbeInterval(v string) {
     } else {
         p.probeInterval = probeInterval
     }
+}
+
+func (p *Pool) SetMod(v string){
+    if Util.SliceSearchString(allMod, v) == -1{
+        panic("Undefined mod:" + v)
+    }
+
+    p.mod = v
 }
 
 func (p *Pool) BuildKey(key string) string {
