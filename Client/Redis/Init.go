@@ -34,6 +34,11 @@ const (
     errSendFailed  = "redis: send request failed, "
     errReadFailed  = "redis: read response failed, "
     errCorrupted   = "redis: corrupted response, "
+
+    PgoMasterSlaveCheckPrefix = "pgo_master_slave_check_"
+
+    NodeActionAdd = "add"
+    NodeActionDel = "del"
 )
 
 var (
@@ -42,7 +47,7 @@ var (
     replyPong  = []byte("PONG")
     allMod     = []string{ModCluster, ModMasterSlave}
 
-    allRedisCms = []string{
+    allRedisCmd = []string{
         // Strings
         "DECR", "DECRBY", "GETSET", "INCR", "INCRBY", "INCRBYFLOAT",
         "SETEX", "PSETEX", "SETNX",
@@ -67,6 +72,22 @@ var (
         "ZADD", "ZCARD", "ZCOUNT", "ZINCRBY", "ZRANGE", "ZRANGEBYSCORE", "ZREVRANGEBYSCORE",
         "ZRANK", "ZREVRANK", "ZREM", "ZREMRANGEBYRANK", "ZREMRANGEBYSCORE", "ZREVRANGE", "ZSCORE",
     }
+
+    allRedisReadCmd = []string{
+        // Strings
+        "GET", "MGET", "BITCOUNT", "STRLEN", "GETBIT", "GETRANGE",
+        // Keys
+        "KEYS", "TYPE", "SCAN", "EXISTS", "PTTL", "TTL",
+        // Hashes
+        "HEXISTS", "HGETALL", "HKEYS", "HLEN", "HGET", "HMGET",
+        // Set
+        "SISMEMBER", "SMEMBERS", "SRANDMEMBER", "SSCAN", "SCARD", "SDIFF", "SINTER",
+        // List
+        "LINDEX", "LLEN", "LRANGE",
+        // Sorted Set
+        "ZCARD", "ZCOUNT", "ZRANGE", "ZRANGEBYSCORE", "ZRANK", "ZREVRANGE", "ZREVRANGEBYSCORE",
+        "ZREVRANK", "ZSCAN", "ZSCORE",
+    }
 )
 
 func init() {
@@ -74,6 +95,7 @@ func init() {
 
     container.Bind(&Adapter{})
     container.Bind(&Client{})
+
 }
 
 func keys2Args(keys []string) []interface{} {
@@ -82,4 +104,10 @@ func keys2Args(keys []string) []interface{} {
         args[i] = k
     }
     return args
+}
+
+type IPool interface {
+    startCheck()
+    check(addr, aType string)
+    getAddrByKey(cmd, key, prevDft string) string
 }
