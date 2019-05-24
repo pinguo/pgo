@@ -75,6 +75,7 @@ func (m *MasterSlavePool) check(addr, aType string) {
 	if len(m.slaves) == 0 {
 		// check master
 		m.startCheckMaster()
+
 		// check  slave
 		m.startCheckSlaves()
 	}
@@ -204,18 +205,24 @@ func (m *MasterSlavePool) checkSlave(addr string) string {
 	conn := m.pool.GetConnByAddr(addr)
 	defer conn.Close(false)
 
-	retI := conn.Do("GET", m.getCheckKey())
-	ret := pgo.NewValue(retI)
-	if ret.Int() == 1 {
-		serverInfo := m.pool.servers[addr]
-		for i := 0; i < serverInfo.weight; i++ {
-			m.slaves = append(m.slaves, addr)
-		}
-
-		return addr
+	conn.Do("GET", m.getCheckKey())
+	serverInfo := m.pool.servers[addr]
+	for i := 0; i < serverInfo.weight; i++ {
+		m.slaves = append(m.slaves, addr)
 	}
 
-	return ""
+	return addr
+	//ret := pgo.NewValue(retI)
+	//if ret.Int() == 1 {
+	//	serverInfo := m.pool.servers[addr]
+	//	for i := 0; i < serverInfo.weight; i++ {
+	//		m.slaves = append(m.slaves, addr)
+	//	}
+	//
+	//	return addr
+	//}
+	//
+	//return ""
 }
 
 func (m *MasterSlavePool) getCheckKey() string {
