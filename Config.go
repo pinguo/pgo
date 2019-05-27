@@ -104,7 +104,7 @@ func (c *Config) GetString(key string, dft string) string {
     return dft
 }
 
-// GetBool get bool value from config,
+// GetSliceBool get []bool value from config,
 // key is dot separated config key,
 // nil is default value if key not exists.
 func (c *Config) GetSliceBool(key string) []bool {
@@ -120,7 +120,7 @@ func (c *Config) GetSliceBool(key string) []bool {
     return ret
 }
 
-// GetSliceInt get int value from config,
+// GetSliceInt get []int value from config,
 // key is dot separated config key,
 // nil is default value if key not exists.
 func (c *Config) GetSliceInt(key string) []int {
