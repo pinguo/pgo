@@ -104,6 +104,70 @@ func (c *Config) GetString(key string, dft string) string {
     return dft
 }
 
+// GetSliceBool get []bool value from config,
+// key is dot separated config key,
+// nil is default value if key not exists.
+func (c *Config) GetSliceBool(key string) []bool {
+    var ret []bool
+    if v := c.Get(key); v != nil {
+        if vI, ok := v.([]interface{}); ok == true {
+            for _, vv := range vI {
+                ret = append(ret, Util.ToBool(vv))
+            }
+        }
+    }
+
+    return ret
+}
+
+// GetSliceInt get []int value from config,
+// key is dot separated config key,
+// nil is default value if key not exists.
+func (c *Config) GetSliceInt(key string) []int {
+    var ret []int
+    if v := c.Get(key); v != nil {
+        if vI, ok := v.([]interface{}); ok == true {
+            for _, vv := range vI {
+                ret = append(ret, Util.ToInt(vv))
+            }
+        }
+    }
+
+    return ret
+}
+
+// GetSliceFloat get []float value from config,
+// key is dot separated config key,
+// nil is default value if key not exists.
+func (c *Config) GetSliceFloat(key string) []float64 {
+    var ret []float64
+    if v := c.Get(key); v != nil {
+        if vI, ok := v.([]interface{}); ok == true {
+            for _, vv := range vI {
+                ret = append(ret, Util.ToFloat(vv))
+            }
+        }
+    }
+
+    return ret
+}
+
+// GetSliceString get []string value from config,
+// key is dot separated config key,
+// nil is default value if key not exists.
+func (c *Config) GetSliceString(key string) []string {
+    var ret []string
+    if v := c.Get(key); v != nil {
+        if vI, ok := v.([]interface{}); ok == true {
+            for _, vv := range vI {
+                ret = append(ret, Util.ToString(vv))
+            }
+        }
+    }
+
+    return ret
+}
+
 // Get get value by dot separated key,
 // the first part of key is file name
 // without extension. if key is empty,
