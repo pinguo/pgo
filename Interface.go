@@ -51,3 +51,9 @@ type ICache interface {
     Exists(key string) bool
     Incr(key string, delta int) int
 }
+
+// IBindName specify a name to bind to `pgo.Container`
+// default bind name rule is: `name := rt.PkgPath() + "/" + rt.Name()`
+type IBindName() interface {
+    BindName() string
+}

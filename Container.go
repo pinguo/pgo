@@ -62,9 +62,14 @@ func (c *Container) Bind(i interface{}) {
     }
 
     // get class name
-    name := rt.PkgPath() + "/" + rt.Name()
-    if len(name) > VendorLength && name[:VendorLength] == VendorPrefix {
-        name = name[VendorLength:]
+    var name string
+    if bindName, ok := i.(IBindName); ok {
+        name = bindName.BindName()
+    } else {
+        name = rt.PkgPath() + "/" + rt.Name()
+        if len(name) > VendorLength && name[:VendorLength] == VendorPrefix {
+            name = name[VendorLength:]
+        }
     }
 
     c.items[name] = &item
