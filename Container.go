@@ -2,6 +2,7 @@ package pgo
 
 import (
     "reflect"
+    "strings"
     "sync"
 )
 
@@ -62,7 +63,16 @@ func (c *Container) Bind(i interface{}) {
     }
 
     // get class name
-    name := rt.PkgPath() + "/" + rt.Name()
+    pkgPath := rt.PkgPath()
+    name := pkgPath + "/" + rt.Name()
+    if index:=strings.Index(pkgPath, ControllerWeb); index >=0 {
+        name = name[index:]
+    }
+
+    if index:=strings.Index(pkgPath, ControllerCmd); index >=0 {
+        name = name[index:]
+    }
+
     if len(name) > VendorLength && name[:VendorLength] == VendorPrefix {
         name = name[VendorLength:]
     }
