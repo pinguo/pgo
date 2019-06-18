@@ -22,6 +22,10 @@ type IPlugin interface {
     HandleRequest(ctx *Context)
 }
 
+type IEvent interface {
+    HandleEvent(event string, ctx *Context, args ...interface{})
+}
+
 type IFormatter interface {
     Format(item *LogItem) string
 }

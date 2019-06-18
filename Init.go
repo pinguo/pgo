@@ -13,7 +13,7 @@ import (
 const (
     ModeWeb            = 1
     ModeCmd            = 2
-    DefaultEnv         = "production"
+    DefaultEnv         = "develop"
     DefaultController  = "Index"
     DefaultAction      = "Index"
     DefaultHttpAddr    = "0.0.0.0:8000"

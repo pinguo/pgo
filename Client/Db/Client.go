@@ -50,6 +50,8 @@ func (c *Client) Init() {
     if db, e := sql.Open(c.driver, c.dsn); e != nil {
         panic(fmt.Sprintf("Db: open %s error, %s", c.dsn, e.Error()))
     } else {
+        db.SetConnMaxLifetime(c.maxConnTime)
+        db.SetMaxIdleConns(c.maxIdleConn)
         c.masterDb = db
     }
 
@@ -58,6 +60,8 @@ func (c *Client) Init() {
         if db, e := sql.Open(c.driver, dsn); e != nil {
             panic(fmt.Sprintf("Db: open %s error, %s", dsn, e.Error()))
         } else {
+            db.SetConnMaxLifetime(c.maxConnTime)
+            db.SetMaxIdleConns(c.maxIdleConn)
             c.slaveDbs = append(c.slaveDbs, db)
         }
     }

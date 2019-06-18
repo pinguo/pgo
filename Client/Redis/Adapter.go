@@ -144,3 +144,24 @@ func (a *Adapter) Incr(key string, delta int) int {
 
     return a.client.Incr(key, delta)
 }
+
+// 支持的命令请查阅：Redis.allRedisCmd
+// args = [0:"key"]
+// Example:
+// redis := t.GetObject(Redis.AdapterClass).(*Redis.Adapter)
+// retI := redis.Do("SADD","myTest", "test1")
+// ret := retI.(int)
+// fmt.Println(ret) = 1
+// retList :=redis.Do("SMEMBERS","myTest")
+// retListI,_:=ret.([]interface{})
+// for _,v:=range retListI{
+//    vv :=pgo.NewValue(v) // 写入的时候有pgo.Encode(),如果存入的是结构体或slice map 需要decode,其他类型直接断言类型
+//    fmt.Println(vv.String()) // test1
+// }
+func (a *Adapter) Do(cmd string, args ... interface{} ) interface{}{
+    profile := "Redis.Do." + cmd
+    a.GetContext().ProfileStart(profile)
+    defer a.GetContext().ProfileStop(profile)
+    defer a.handlePanic()
+    return a.client.Do(cmd, args ...)
+}

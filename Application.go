@@ -27,23 +27,25 @@ import (
 // server:      {}
 // components:  {}
 type Application struct {
-    mode        int
-    env         string
-    name        string
-    basePath    string
-    runtimePath string
-    publicPath  string
-    viewPath    string
-    config      *Config
-    container   *Container
-    server      *Server
-    components  map[string]interface{}
-    lock        sync.RWMutex
-    router      *Router
-    log         *Log
-    status      *Status
-    i18n        *I18n
-    view        *View
+    mode        int    // running mode, WEB or CMD
+    env         string // running env, eg. develop/online/testing-dev/testing-qa
+    name        string // application name
+    basePath    string // base path of application
+    runtimePath string // runtime path for log etc.
+    publicPath  string // public path for web assets
+    viewPath    string // path for view template
+
+    config     *Config
+    container  *Container
+    server     *Server
+    components map[string]interface{}
+    lock       sync.RWMutex
+    router     *Router
+    log        *Log
+    status     *Status
+    i18n       *I18n
+    view       *View
+    stopBefore *StopBefore // 服务停止前执行 [{"obj":"func"}]
 }
 
 func (app *Application) Construct() {
@@ -59,10 +61,11 @@ func (app *Application) Construct() {
     app.container = &Container{}
     app.server = &Server{}
     app.components = make(map[string]interface{})
+    app.stopBefore = &StopBefore{}
 }
 
 func (app *Application) Init() {
-    env := flag.String("env", "", "set running env, eg. --env production")
+    env := flag.String("env", "", "set running env, eg. --env online")
     cmd := flag.String("cmd", "", "set running cmd, eg. --cmd /foo/bar")
     base := flag.String("base", "", "set base path, eg. --base /base/path")
     flag.Parse()
@@ -231,6 +234,11 @@ func (app *Application) GetView() *View {
     }
 
     return app.view
+}
+
+// GetStopBefore get stopBefore component
+func (app *Application) GetStopBefore() *StopBefore{
+    return app.stopBefore
 }
 
 // Get get component by id

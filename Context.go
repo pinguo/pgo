@@ -333,6 +333,24 @@ func (c *Context) GetPostMap(name string) map[string]string {
     return nil
 }
 
+// GetParamArray get array value from GET/POST
+func (c *Context) GetParamArray(name string) []string {
+    // TODO name[]=v1&name[]=v2
+    return nil
+}
+
+// GetQueryArray get array value from GET
+func (c *Context) GetQueryArray(name string) []string {
+    // TODO name[]=v1&name[]=v2
+    return nil
+}
+
+// GetPostArray get array value from POST
+func (c *Context) GetPostArray(name string) []string {
+    // TODO name[]=v1&name[]=v2
+    return nil
+}
+
 // GetCookie get first cookie value by name
 func (c *Context) GetCookie(name, dft string) string {
     if c.input != nil {
@@ -473,5 +491,6 @@ func (c *Context) End(status int, data []byte) {
         c.output.Write(data)
     } else if len(data) > 0 {
         os.Stdout.Write(data)
+        os.Stdout.WriteString("\n")
     }
 }

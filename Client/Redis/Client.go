@@ -2,11 +2,13 @@ package Redis
 
 import (
     "bytes"
+    "strings"
     "sync"
     "sync/atomic"
     "time"
 
     "github.com/pinguo/pgo"
+    "github.com/pinguo/pgo/Util"
 )
 
 // Redis Client component, require redis-server 2.6.12+
@@ -20,6 +22,7 @@ import (
 //     maxIdleTime: "60s"
 //     netTimeout: "1s"
 //     probInterval: "0s"
+//     mod:"cluster"
 //     servers:
 //         - "127.0.0.1:6379"
 //         - "127.0.0.1:6380"
@@ -29,7 +32,7 @@ type Client struct {
 
 func (c *Client) Get(key string) *pgo.Value {
     newKey := c.BuildKey(key)
-    conn := c.GetConnByKey(newKey)
+    conn := c.GetConnByKey("GET", newKey)
     defer conn.Close(false)
 
     return pgo.NewValue(conn.Do("GET", newKey))
@@ -37,7 +40,7 @@ func (c *Client) Get(key string) *pgo.Value {
 
 func (c *Client) MGet(keys []string) map[string]*pgo.Value {
     result := make(map[string]*pgo.Value)
-    addrKeys, newKeys := c.AddrNewKeys(keys)
+    addrKeys, newKeys := c.AddrNewKeys("MGET", keys)
     lock, wg := new(sync.Mutex), new(sync.WaitGroup)
 
     wg.Add(len(addrKeys))
@@ -80,7 +83,7 @@ func (c *Client) MAdd(items map[string]interface{}, expire ...time.Duration) boo
 
 func (c *Client) Del(key string) bool {
     newKey := c.BuildKey(key)
-    conn := c.GetConnByKey(newKey)
+    conn := c.GetConnByKey("DEL", newKey)
     defer conn.Close(false)
 
     num, ok := conn.Do("DEL", newKey).(int)
@@ -88,7 +91,7 @@ func (c *Client) Del(key string) bool {
 }
 
 func (c *Client) MDel(keys []string) bool {
-    addrKeys, _ := c.AddrNewKeys(keys)
+    addrKeys, _ := c.AddrNewKeys("DEL", keys)
     wg, success := new(sync.WaitGroup), uint32(0)
 
     wg.Add(len(addrKeys))
@@ -106,7 +109,7 @@ func (c *Client) MDel(keys []string) bool {
 
 func (c *Client) Exists(key string) bool {
     newKey := c.BuildKey(key)
-    conn := c.GetConnByKey(newKey)
+    conn := c.GetConnByKey("EXISTS", newKey)
     defer conn.Close(false)
 
     num, ok := conn.Do("EXISTS", newKey).(int)
@@ -115,7 +118,7 @@ func (c *Client) Exists(key string) bool {
 
 func (c *Client) Incr(key string, delta int) int {
     newKey := c.BuildKey(key)
-    conn := c.GetConnByKey(newKey)
+    conn := c.GetConnByKey("INCRBY", newKey)
     defer conn.Close(false)
 
     num, _ := conn.Do("INCRBY", newKey, delta).(int)
@@ -124,7 +127,7 @@ func (c *Client) Incr(key string, delta int) int {
 
 func (c *Client) set(key string, value interface{}, expire time.Duration, flag string) bool {
     newKey := c.BuildKey(key)
-    conn := c.GetConnByKey(newKey)
+    conn := c.GetConnByKey("SET", newKey)
     defer conn.Close(false)
 
     var res interface{}
@@ -139,9 +142,8 @@ func (c *Client) set(key string, value interface{}, expire time.Duration, flag s
 }
 
 func (c *Client) mset(items map[string]interface{}, expire time.Duration, flag string) bool {
-    addrKeys, newKeys := c.AddrNewKeys(items)
+    addrKeys, newKeys := c.AddrNewKeys("SET", items)
     wg, success := new(sync.WaitGroup), uint32(0)
-
     wg.Add(len(addrKeys))
     for addr, keys := range addrKeys {
         go c.RunAddrFunc(addr, keys, wg, func(conn *Conn, keys []string) {
@@ -163,5 +165,31 @@ func (c *Client) mset(items map[string]interface{}, expire time.Duration, flag s
     }
 
     wg.Wait()
+
     return success == uint32(len(items))
+}
+
+// args = [0:"key"]
+func (c *Client) Do(cmd string, args ...interface{}) interface{} {
+    if len(args) == 0 {
+        panic("The length of args has to be greater than 1")
+    }
+
+    key, ok := args[0].(string)
+    if ok == false {
+        panic("Invalid key string:" + Util.ToString(args[0]))
+    }
+
+    cmd = strings.ToUpper(cmd)
+    if Util.SliceSearchString(allRedisCmd, cmd) == -1 {
+        panic("Undefined command:" + cmd)
+    }
+
+    newKey := c.BuildKey(key)
+    conn := c.GetConnByKey(cmd, newKey)
+    defer conn.Close(false)
+
+    args[0] = newKey
+
+    return conn.Do(cmd, args ...)
 }

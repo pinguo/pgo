@@ -7,6 +7,7 @@ import (
     "sync"
     "time"
 
+    "github.com/pinguo/pgo"
     "github.com/pinguo/pgo/Util"
 )
 
@@ -34,6 +35,11 @@ type Pool struct {
     maxIdleTime   time.Duration
     netTimeout    time.Duration
     probeInterval time.Duration
+    mod           string
+    modObj        IPool
+
+    // 重新检查标志
+    reCheck string
 }
 
 func (p *Pool) Construct() {
@@ -48,6 +54,7 @@ func (p *Pool) Construct() {
     p.maxIdleTime = defaultIdleTime
     p.netTimeout = defaultTimeout
     p.probeInterval = defaultProbe
+    p.mod = ModCluster
 }
 
 func (p *Pool) Init() {
@@ -55,9 +62,14 @@ func (p *Pool) Init() {
         p.servers[defaultServer] = &serverInfo{weight: 1, disabled: false}
     }
 
-    for addr, item := range p.servers {
-        p.hashRing.AddNode(addr, item.weight)
+    if p.mod == ModCluster {
+        p.modObj = newClusterPool(p).(IPool)
+    } else {
+        p.modObj = newMasterSlavePool(p).(IPool)
     }
+
+    // first init cluster/master-slaves
+    p.modObj.startCheck()
 
     if p.probeInterval != 0 {
         if p.probeInterval > maxProbeInterval {
@@ -85,6 +97,7 @@ func (p *Pool) SetDb(db int) {
 func (p *Pool) SetServers(v []interface{}) {
     for _, vv := range v {
         addr := vv.(string)
+
         if pos := strings.Index(addr, "://"); pos != -1 {
             addr = addr[pos+3:]
         }
@@ -134,24 +147,35 @@ func (p *Pool) SetProbeInterval(v string) {
     }
 }
 
+func (p *Pool) SetMod(v string) {
+    if Util.SliceSearchString(allMod, v) == -1 {
+        panic("Undefined mod:" + v)
+    }
+
+    p.mod = v
+}
+
 func (p *Pool) BuildKey(key string) string {
     return p.prefix + key
 }
 
-func (p *Pool) AddrNewKeys(v interface{}) (map[string][]string, map[string]string) {
+func (p *Pool) AddrNewKeys(cmd string, v interface{}) (map[string][]string, map[string]string) {
     addrKeys, newKeys := make(map[string][]string), make(map[string]string)
+    prevAddr := ""
     switch vv := v.(type) {
     case []string:
         for _, key := range vv {
             newKey := p.BuildKey(key)
-            addr := p.GetAddrByKey(newKey)
+            addr := p.GetAddrByKey(cmd, newKey, prevAddr)
+            prevAddr = addr
             newKeys[newKey] = key
             addrKeys[addr] = append(addrKeys[addr], newKey)
         }
     case map[string]interface{}:
         for key := range vv {
             newKey := p.BuildKey(key)
-            addr := p.GetAddrByKey(newKey)
+            addr := p.GetAddrByKey(cmd, newKey, prevAddr)
+            prevAddr = addr
             newKeys[newKey] = key
             addrKeys[addr] = append(addrKeys[addr], newKey)
         }
@@ -163,7 +187,9 @@ func (p *Pool) AddrNewKeys(v interface{}) (map[string][]string, map[string]strin
 
 func (p *Pool) RunAddrFunc(addr string, keys []string, wg *sync.WaitGroup, f func(*Conn, []string)) {
     defer func() {
-        recover() // ignore panic
+        if err := recover(); err != nil {
+            pgo.GLogger().Error("go coroutine RunAddrFunc,err:" + Util.ToString(err))
+        }
         wg.Done() // notify done
     }()
 
@@ -173,8 +199,8 @@ func (p *Pool) RunAddrFunc(addr string, keys []string, wg *sync.WaitGroup, f fun
     f(conn, keys)
 }
 
-func (p *Pool) GetConnByKey(key string) *Conn {
-    if addr := p.GetAddrByKey(key); len(addr) == 0 {
+func (p *Pool) GetConnByKey(cmd, key string) *Conn {
+    if addr := p.GetAddrByKey(cmd, key); len(addr) == 0 {
         panic(errNoServer)
     } else {
         return p.GetConnByAddr(addr)
@@ -191,16 +217,20 @@ func (p *Pool) GetConnByAddr(addr string) *Conn {
     return conn
 }
 
-func (p *Pool) GetAddrByKey(key string) string {
-    p.lock.RLock()
-    defer p.lock.RUnlock()
-    return p.hashRing.GetNode(key)
+// get redis address/node
+// prevDft 一般用于master-slave mset mget mdel
+func (p *Pool) GetAddrByKey(cmd, key string, prevDft ...string) string {
+    cmd = strings.ToUpper(cmd)
+    prev := ""
+    if len(prevDft) > 0 {
+        prev = prevDft[0]
+    }
+    return p.modObj.getAddrByKey(cmd, key, prev)
 }
 
 func (p *Pool) getFreeConn(addr string) *Conn {
     p.lock.Lock()
     defer p.lock.Unlock()
-
     list := p.connLists[addr]
     if list == nil || list.count == 0 {
         return nil
@@ -293,20 +323,31 @@ func (p *Pool) parseNetwork(addr string) string {
 func (p *Pool) probeServer(addr string) {
     nc, e := net.DialTimeout(p.parseNetwork(addr), addr, p.netTimeout)
     if e != nil && !p.servers[addr].disabled {
-        p.lock.Lock()
-        p.servers[addr].disabled = true
-        p.hashRing.DelNode(addr)
-        p.lock.Unlock()
+        p.setServerDisabled(addr, true)
+        p.modObj.check(addr, NodeActionDel)
     } else if e == nil && p.servers[addr].disabled {
-        p.lock.Lock()
-        p.servers[addr].disabled = false
-        p.hashRing.AddNode(addr, p.servers[addr].weight)
-        p.lock.Unlock()
+        p.setServerDisabled(addr, false)
+        p.modObj.check(addr, NodeActionAdd)
+
     }
 
     if e == nil {
-        nc.Close()
+        err := nc.Close()
+        if err != nil {
+
+        }
     }
+
+    // 强制重新检查master
+    if p.reCheck != "" {
+        p.modObj.check(p.reCheck, NodeActionDel)
+    }
+}
+
+func (p *Pool) setServerDisabled(addr string, disabled bool) {
+    p.lock.Lock()
+    defer p.lock.Unlock()
+    p.servers[addr].disabled = disabled
 }
 
 func (p *Pool) probeLoop() {
