@@ -64,14 +64,16 @@ func (c *Container) Bind(i interface{}) {
 
     // get class name
     pkgPath := rt.PkgPath()
-    name := pkgPath + "/" + rt.Name()
-    if index := strings.Index(pkgPath, ControllerWeb); index >= 0 {
-        name = name[index:]
+
+    if index := strings.Index(pkgPath, "/"+ControllerWeb); index >= 0 {
+        pkgPath = pkgPath[index+1:]
     }
 
-    if index := strings.Index(pkgPath, ControllerCmd); index >= 0 {
-        name = name[index:]
+    if index := strings.Index(pkgPath, "/"+ControllerCmd); index >= 0 {
+        pkgPath = pkgPath[index+1:]
     }
+
+    name := pkgPath + "/" + rt.Name()
 
     if len(name) > VendorLength && name[:VendorLength] == VendorPrefix {
         name = name[VendorLength:]
