@@ -16,6 +16,7 @@ import (
 //     dsn:    "user:pass@tcp(127.0.0.1:3306)/db?charset=utf8&timeout=0.5s"
 //     slaves: ["slave1 dsn", "slave2 dsn"]
 //     maxIdleConn: 5
+//     maxOpenConn: 10
 //     sqlLog:false
 //     maxConnTime: "1h"
 //     slowLogTime: "100ms"
