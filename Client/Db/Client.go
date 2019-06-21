@@ -16,6 +16,7 @@ import (
 //     dsn:    "user:pass@tcp(127.0.0.1:3306)/db?charset=utf8&timeout=0.5s"
 //     slaves: ["slave1 dsn", "slave2 dsn"]
 //     maxIdleConn: 5
+//     sqlLog:false
 //     maxConnTime: "1h"
 //     slowLogTime: "100ms"
 type Client struct {
@@ -26,6 +27,9 @@ type Client struct {
     maxIdleConn int
     maxConnTime time.Duration
     slowLogTime time.Duration
+    maxOpenConn int
+
+    sqlLog bool // Complete SQL log
 
     masterDb *sql.DB   // master db instance
     slaveDbs []*sql.DB // slave db instances
@@ -33,8 +37,10 @@ type Client struct {
 
 func (c *Client) Construct() {
     c.maxIdleConn = 5
+    c.maxOpenConn = 0
     c.maxConnTime = time.Hour
     c.slowLogTime = 100 * time.Millisecond
+    c.sqlLog = false
 }
 
 func (c *Client) Init() {
@@ -52,6 +58,7 @@ func (c *Client) Init() {
     } else {
         db.SetConnMaxLifetime(c.maxConnTime)
         db.SetMaxIdleConns(c.maxIdleConn)
+        db.SetMaxOpenConns(c.maxOpenConn)
         c.masterDb = db
     }
 
@@ -62,6 +69,7 @@ func (c *Client) Init() {
         } else {
             db.SetConnMaxLifetime(c.maxConnTime)
             db.SetMaxIdleConns(c.maxIdleConn)
+            db.SetMaxOpenConns(c.maxOpenConn)
             c.slaveDbs = append(c.slaveDbs, db)
         }
     }
@@ -91,6 +99,11 @@ func (c *Client) SetMaxIdleConn(maxIdleConn int) {
     c.maxIdleConn = maxIdleConn
 }
 
+// SetMaxOpenConn set max open conn, default is 0
+func (c *Client) SetMaxOpenConn(maxOpenConn int) {
+    c.maxOpenConn = maxOpenConn
+}
+
 // SetMaxConnTime set conn life time, default is 1h
 func (c *Client) SetMaxConnTime(v string) {
     if maxConnTime, err := time.ParseDuration(v); err != nil {
@@ -107,6 +120,10 @@ func (c *Client) SetSlowLogTime(v string) {
     } else {
         c.slowLogTime = slowLogTime
     }
+}
+
+func (c *Client) SetSqlLog(sqlLog bool) {
+    c.sqlLog = sqlLog
 }
 
 // GetDb get a master or slave db instance

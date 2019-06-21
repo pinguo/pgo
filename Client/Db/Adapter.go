@@ -7,6 +7,7 @@ import (
     "time"
 
     "github.com/pinguo/pgo"
+    "github.com/pinguo/pgo/Util"
 )
 
 // Adapter of Db Client, add context support.
@@ -109,7 +110,7 @@ func (a *Adapter) QueryOneContext(ctx context.Context, query string, args ...int
     start := time.Now()
     defer func() {
         elapse := time.Since(start)
-        a.GetContext().ProfileAdd("Db.QueryOne", elapse)
+        a.ProfileAdd("Db.QueryOne", elapse, query, args...)
 
         if elapse >= a.client.slowLogTime && a.client.slowLogTime > 0 {
             a.GetContext().Warn("Db.QueryOne slow, elapse:%s, query:%s, args:%v", elapse, query, args)
@@ -144,7 +145,7 @@ func (a *Adapter) QueryContext(ctx context.Context, query string, args ...interf
     start := time.Now()
     defer func() {
         elapse := time.Since(start)
-        a.GetContext().ProfileAdd("Db.Query", elapse)
+        a.ProfileAdd("Db.Query", elapse, query, args...)
 
         if elapse >= a.client.slowLogTime && a.client.slowLogTime > 0 {
             a.GetContext().Warn("Db.Query slow, elapse:%s, query:%s, args:%v", elapse, query, args)
@@ -179,7 +180,7 @@ func (a *Adapter) ExecContext(ctx context.Context, query string, args ...interfa
     start := time.Now()
     defer func() {
         elapse := time.Since(start)
-        a.GetContext().ProfileAdd("Db.Exec", elapse)
+        a.ProfileAdd("Db.Exec", elapse, query, args...)
 
         if elapse >= a.client.slowLogTime && a.client.slowLogTime > 0 {
             a.GetContext().Warn("Db.Exec slow, elapse:%s, query:%s, args:%v", elapse, query, args)
@@ -240,4 +241,19 @@ func (a *Adapter) PrepareContext(ctx context.Context, query string) *Stmt {
     stmtWrapper.query = query
 
     return stmtWrapper
+}
+
+func (a *Adapter) ProfileAdd(key string, elapse time.Duration, query string, args ...interface{}) {
+    newKey := key
+    if a.client.sqlLog == true {
+        if len(args) > 0 {
+            for _, v := range args {
+                query = strings.Replace(query, "?", Util.ToString(v), 1)
+            }
+        }
+
+        newKey = key + "(" + query + ")"
+    }
+
+    a.GetContext().ProfileAdd(newKey, elapse)
 }
