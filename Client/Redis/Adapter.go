@@ -48,7 +48,7 @@ func (a *Adapter) Get(key string) *pgo.Value {
     defer a.handlePanic()
 
     res, hit := a.client.Get(key), 0
-    if res != nil {
+    if res != nil && res.Valid() {
         hit = 1
     }
 
@@ -64,7 +64,7 @@ func (a *Adapter) MGet(keys []string) map[string]*pgo.Value {
 
     res, hit := a.client.MGet(keys), 0
     for _, v := range res {
-        if v != nil {
+        if v != nil && v.Valid() {
             hit += 1
         }
     }
@@ -158,7 +158,7 @@ func (a *Adapter) Incr(key string, delta int) int {
 //    vv :=pgo.NewValue(v) // 写入的时候有pgo.Encode(),如果存入的是结构体或slice map 需要decode,其他类型直接断言类型
 //    fmt.Println(vv.String()) // test1
 // }
-func (a *Adapter) Do(cmd string, args ... interface{} ) interface{}{
+func (a *Adapter) Do(cmd string, args ...interface{}) interface{} {
     profile := "Redis.Do." + cmd
     a.GetContext().ProfileStart(profile)
     defer a.GetContext().ProfileStop(profile)
