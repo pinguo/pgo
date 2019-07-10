@@ -48,6 +48,15 @@ type Application struct {
     stopBefore *StopBefore // 服务停止前执行 [{"obj":"func"}]
 }
 
+func (app *Application) getBasePath(exeDir string) string {
+    basePath := os.Getenv("PgoTestAppBasePath")
+    if basePath == "" {
+        basePath, _ = filepath.Abs(filepath.Join(exeDir, ".."))
+    }
+
+    return basePath
+}
+
 func (app *Application) Construct() {
     exeBase := filepath.Base(os.Args[0])
     exeExt := filepath.Ext(os.Args[0])
@@ -56,7 +65,7 @@ func (app *Application) Construct() {
     app.env = DefaultEnv
     app.mode = ModeWeb
     app.name = strings.TrimSuffix(exeBase, exeExt)
-    app.basePath, _ = filepath.Abs(filepath.Join(exeDir, ".."))
+    app.basePath = app.getBasePath(exeDir)
     app.config = &Config{}
     app.container = &Container{}
     app.server = &Server{}
@@ -237,7 +246,7 @@ func (app *Application) GetView() *View {
 }
 
 // GetStopBefore get stopBefore component
-func (app *Application) GetStopBefore() *StopBefore{
+func (app *Application) GetStopBefore() *StopBefore {
     return app.stopBefore
 }
 
