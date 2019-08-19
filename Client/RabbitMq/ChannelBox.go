@@ -51,6 +51,6 @@ func (c *ChannelBox) channelClose() {
     }
 }
 
-func (c *ChannelBox) GetChannel(force bool) *amqp.Channel {
+func (c *ChannelBox) GetChannel() *amqp.Channel {
     return c.channel
 }
