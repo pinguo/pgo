@@ -20,3 +20,9 @@ func (o *Object) GetObject(class interface{}, params ...interface{}) interface{}
     params = append(params, o.GetContext())
     return CreateObject(class, params...)
 }
+
+// GetObject create new object and inject custom context
+func (o *Object) GetObjectCtx(class interface{}, context *Context, params ...interface{}) interface{} {
+    params = append(params, context)
+    return CreateObject(class, params...)
+}
